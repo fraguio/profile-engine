@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# RenderCV
+.rendercv/
+*.log
+
+# OS
+.DS_Store
+
+# Outputs
+*.pdf 
+*.html
