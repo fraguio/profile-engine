@@ -7,7 +7,7 @@ name = "cv-automation"
 version = "0.1.0"
 description = "CV tooling project"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["jsonschema"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
