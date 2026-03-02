@@ -1,5 +1,9 @@
+# Packaging
+*.egg-info/
+
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 
 # RenderCV
