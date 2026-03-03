@@ -49,3 +49,9 @@ def test_export_invalid_format_returns_usage_error() -> None:
 def test_export_invalid_json_from_stdin_returns_parse_error() -> None:
     result = runner.invoke(app, ["export", "-i", "-"], input="{not-json")
     assert result.exit_code == 3
+
+
+def test_export_json_root_must_be_object() -> None:
+    result = runner.invoke(app, ["export", "-i", "-", "-o", "-"], input="[]")
+    assert result.exit_code == 3
+    assert "Error: JSON root must be an object" in result.output

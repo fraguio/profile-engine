@@ -31,5 +31,5 @@ def test_validate_rejects_invalid_jsonresume(tmp_path) -> None:
         check=False,
     )
 
-    assert result.returncode == 1
-    assert "$:" in result.stdout
+    assert result.returncode == 3
+    assert "Error:" in result.stderr

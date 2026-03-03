@@ -21,6 +21,7 @@ class ExitCode(IntEnum):
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
+SUPPORTED_EXPORT_FORMAT = "rendercv"
 
 
 def _print_version(value: bool) -> None:
@@ -54,7 +55,7 @@ def main(
 
 def _resolve_input_source(input_path: Path | None, input_option: str) -> str:
     if input_path is not None and input_option != "-":
-        typer.echo("Invalid usage: pass either PATH or --input, not both.", err=True)
+        typer.echo("Error: pass either PATH or --input, not both.", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
     if input_path is not None:
         return str(input_path)
@@ -68,15 +69,22 @@ def _load_payload(input_source: str) -> dict[str, object]:
         else:
             payload = json.loads(Path(input_source).read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        typer.echo(f"Invalid JSON: {exc.msg}", err=True)
+        typer.echo(
+            f"Error: input must be valid JSON ({exc.msg}).",
+            err=True,
+        )
         raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
     except OSError as exc:
-        typer.echo(f"I/O error: {exc}", err=True)
+        typer.echo(
+            f"Error: I/O error while reading input '{input_source}': {exc}",
+            err=True,
+        )
         raise typer.Exit(code=ExitCode.IO) from exc
 
-    if isinstance(payload, dict):
-        return payload
-    return {}
+    if not isinstance(payload, dict):
+        typer.echo("Error: JSON root must be an object", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE)
+    return payload
 
 
 def _write_output(output: str, output_path: str) -> None:
@@ -89,13 +97,19 @@ def _write_output(output: str, output_path: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(output, encoding="utf-8")
     except OSError as exc:
-        typer.echo(f"I/O error: {exc}", err=True)
+        typer.echo(
+            f"Error: I/O error while writing output '{output_path}': {exc}",
+            err=True,
+        )
         raise typer.Exit(code=ExitCode.IO) from exc
 
 
 def _run_export(input_source: str, output_path: str, fmt: str) -> None:
-    if fmt != "rendercv":
-        typer.echo(f"Unsupported format: {fmt}", err=True)
+    if fmt != SUPPORTED_EXPORT_FORMAT:
+        typer.echo(
+            f"Error: unsupported format '{fmt}'. Allowed value: '{SUPPORTED_EXPORT_FORMAT}'.",
+            err=True,
+        )
         raise typer.Exit(code=ExitCode.USAGE)
 
     try:
@@ -105,23 +119,50 @@ def _run_export(input_source: str, output_path: str, fmt: str) -> None:
     except typer.Exit:
         raise
     except Exception as exc:
-        typer.echo(f"Unexpected error: {exc}", err=True)
+        typer.echo(f"Error: unexpected error: {exc}", err=True)
         raise typer.Exit(code=ExitCode.UNEXPECTED) from exc
 
 
-@app.command()
+@app.command(
+    help=(
+        "Export a JSON Resume to RenderCV YAML. "
+        "Use '-' for stdin/stdout."
+    )
+)
 def export(
-    path: Annotated[Path | None, typer.Argument(help="Input JSON Resume path.")] = None,
+    path: Annotated[
+        Path | None,
+        typer.Argument(help="Input JSON Resume file path."),
+    ] = None,
     input_option: Annotated[
         str,
-        typer.Option("--input", "-i", help="Input path or '-' for stdin."),
+        typer.Option(
+            "--input",
+            "-i",
+            help="Input file path (default: '-'; read from stdin).",
+        ),
     ] = "-",
     output_path: Annotated[
         str,
-        typer.Option("--output", "-o", help="Output path or '-' for stdout."),
+        typer.Option(
+            "--output",
+            "-o",
+            help="Output file path (default: '-'; write to stdout).",
+        ),
     ] = "-",
-    fmt: Annotated[str, typer.Option("--format", help="Output format.")] = "rendercv",
+    fmt: Annotated[
+        str,
+        typer.Option(
+            "--format",
+            help="Output format. Supported value: 'rendercv'.",
+        ),
+    ] = "rendercv",
 ) -> None:
+    """Examples:
+
+    - cvtool export resume.example.json -o -
+    - cvtool export -i - -o out.yaml
+    """
     input_source = _resolve_input_source(path, input_option)
     _run_export(input_source=input_source, output_path=output_path, fmt=fmt)
 
@@ -134,6 +175,7 @@ def rendercv(
         typer.Option("--out", "-o", help="Output path; defaults to stdout."),
     ] = "-",
 ) -> None:
+    """Compatibility alias for the export command."""
     _run_export(input_source=str(input_path), output_path=output_path, fmt="rendercv")
 
 
@@ -144,15 +186,15 @@ def validate(
     try:
         errors = validate_jsonresume(input_path)
     except json.JSONDecodeError as exc:
-        typer.echo(f"$: invalid JSON ({exc.msg})")
-        raise typer.Exit(code=1) from exc
-    except FileNotFoundError as exc:
-        typer.echo(f"$: file not found ({exc.filename})")
-        raise typer.Exit(code=1) from exc
+        typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
+    except OSError as exc:
+        typer.echo(f"Error: I/O error while reading input '{input_path}': {exc}", err=True)
+        raise typer.Exit(code=ExitCode.IO) from exc
 
     if errors:
         for error in errors:
-            typer.echo(error)
-        raise typer.Exit(code=1)
+            typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE)
 
     typer.echo("OK")
