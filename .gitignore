@@ -13,6 +13,10 @@ __pycache__/
 # OS
 .DS_Store
 
+# Inputs
+resume.json
+
 # Outputs
 *.pdf 
 *.html
+out.yaml

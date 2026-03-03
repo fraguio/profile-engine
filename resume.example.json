@@ -1,0 +1,53 @@
+{
+  "basics": {
+    "name": "Jane Doe",
+    "label": "Senior Backend Developer",
+    "summary": "Experienced backend developer with focus on clean architecture and scalable systems.",
+    "location": {
+      "city": "Madrid",
+      "region": "Comunidad de Madrid",
+      "countryCode": "ES"
+    }
+  },
+  "work": [
+    {
+      "name": "Acme Corp",
+      "position": "Backend Engineer",
+      "startDate": "2023-01",
+      "endDate": "2024-06",
+      "summary": "Worked on microservices architecture.",
+      "highlights": [
+        "Developed REST APIs with FastAPI",
+        "Implemented CI/CD pipelines"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University X",
+      "title": "Computer Science",
+      "startDate": "2020-09",
+      "endDate": "2023-06",
+      "details": [
+        "Focus on distributed systems",
+        "Final project on microservices"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Backend",
+      "keywords": ["Python", "FastAPI", "PostgreSQL"]
+    }
+  ],
+  "languages": [
+    {
+      "language": "Spanish",
+      "fluency": "Native"
+    },
+    {
+      "language": "English",
+      "fluency": "Professional"
+    }
+  ]
+}
