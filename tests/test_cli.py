@@ -26,6 +26,13 @@ def test_export_file_to_stdout_returns_yaml() -> None:
     assert result.stdout.strip() != ""
 
 
+def test_convert_file_to_stdout_returns_yaml() -> None:
+    resume_path = Path(__file__).resolve().parents[1] / "resume.example.json"
+    result = runner.invoke(app, ["convert", str(resume_path), "-o", "-"])
+    assert result.exit_code == 0
+    assert result.stdout.strip() != ""
+
+
 def test_export_from_stdin_to_stdout() -> None:
     resume_path = Path(__file__).resolve().parents[1] / "resume.example.json"
     payload = resume_path.read_text(encoding="utf-8")

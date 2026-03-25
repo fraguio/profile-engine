@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 
-def run_cvtool_subprocess(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
+def run_profilecli_subprocess(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
     project_root = Path(__file__).resolve().parents[1]
     src_path = project_root / "src"
 

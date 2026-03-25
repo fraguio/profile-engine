@@ -28,12 +28,9 @@ def _print_version(value: bool) -> None:
     if not value:
         return
     try:
-        resolved_version = version("cvtool")
+        resolved_version = version("profilectl")
     except PackageNotFoundError:
-        try:
-            resolved_version = version("cv-automation")
-        except PackageNotFoundError:
-            resolved_version = "0.0.0"
+        resolved_version = "0.0.0"
     typer.echo(resolved_version)
     raise typer.Exit()
 
@@ -160,8 +157,52 @@ def export(
 ) -> None:
     """Examples:
 
-    - cvtool export resume.example.json -o -
-    - cvtool export -i - -o out.yaml
+    - profilectl export resume.example.json -o -
+    - profilectl export -i - -o out.yaml
+    """
+    input_source = _resolve_input_source(path, input_option)
+    _run_export(input_source=input_source, output_path=output_path, fmt=fmt)
+
+
+@app.command(
+    help=(
+        "Convert a JSON Resume to RenderCV YAML. "
+        "Use '-' for stdin/stdout."
+    )
+)
+def convert(
+    path: Annotated[
+        Path | None,
+        typer.Argument(help="Input JSON Resume file path."),
+    ] = None,
+    input_option: Annotated[
+        str,
+        typer.Option(
+            "--input",
+            "-i",
+            help="Input file path (default: '-'; read from stdin).",
+        ),
+    ] = "-",
+    output_path: Annotated[
+        str,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Output file path (default: '-'; write to stdout).",
+        ),
+    ] = "-",
+    fmt: Annotated[
+        str,
+        typer.Option(
+            "--format",
+            help="Output format. Supported value: 'rendercv'.",
+        ),
+    ] = "rendercv",
+) -> None:
+    """Examples:
+
+    - profilectl convert resume.example.json -o -
+    - profilectl convert -i - -o out.yaml
     """
     input_source = _resolve_input_source(path, input_option)
     _run_export(input_source=input_source, output_path=output_path, fmt=fmt)
@@ -181,15 +222,32 @@ def rendercv(
 
 @app.command()
 def validate(
-    input_path: Annotated[Path, typer.Option("--in", help="Input JSON Resume path.")],
+    path: Annotated[
+        Path | None,
+        typer.Argument(help="Input JSON Resume path."),
+    ] = None,
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--in", help="Input JSON Resume path."),
+    ] = None,
 ) -> None:
+    if path is not None and input_path is not None:
+        typer.echo("Error: pass either PATH or --in, not both.", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+    if path is None and input_path is None:
+        typer.echo("Error: missing input path; pass PATH or --in.", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+
+    resolved_input_path = path if path is not None else input_path
+    assert resolved_input_path is not None
+
     try:
-        errors = validate_jsonresume(input_path)
+        errors = validate_jsonresume(resolved_input_path)
     except json.JSONDecodeError as exc:
         typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
         raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
     except OSError as exc:
-        typer.echo(f"Error: I/O error while reading input '{input_path}': {exc}", err=True)
+        typer.echo(f"Error: I/O error while reading input '{resolved_input_path}': {exc}", err=True)
         raise typer.Exit(code=ExitCode.IO) from exc
 
     if errors:
