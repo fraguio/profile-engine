@@ -9,8 +9,8 @@ from typing import Annotated
 
 import typer
 
-from cvtool.convert_rendercv import convert_jsonresume_to_rendercv, dump_rendercv_yaml
-from cvtool.validate import validate_jsonresume
+from profilecli.convert_rendercv import convert_jsonresume_to_rendercv, dump_rendercv_yaml
+from profilecli.validate import validate_jsonresume
 
 
 class ExitCode(IntEnum):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from cvtool.cli import app
+from profilecli.cli import app
 
 
 def main() -> None:

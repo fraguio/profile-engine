@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from tests.subprocess_cli import run_cvtool_subprocess
-from cvtool.convert_rendercv import convert_jsonresume_to_rendercv, normalize_date
+from profilecli.convert_rendercv import convert_jsonresume_to_rendercv, normalize_date
 
 
 def _sample_payload() -> dict:

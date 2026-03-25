@@ -20,7 +20,7 @@ def run_cvtool_subprocess(args: Sequence[str]) -> subprocess.CompletedProcess[st
     )
 
     return subprocess.run(
-        [sys.executable, "-m", "cvtool", *args],
+        [sys.executable, "-m", "profilecli", *args],
         capture_output=True,
         text=True,
         check=False,
