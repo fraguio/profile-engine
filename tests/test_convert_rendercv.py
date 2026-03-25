@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from tests.subprocess_cli import run_cvtool_subprocess
 from cvtool.convert_rendercv import convert_jsonresume_to_rendercv, normalize_date
 
 
@@ -109,12 +109,7 @@ def test_cli_rendercv_stdout_contains_schema_header(tmp_path) -> None:
     input_file = tmp_path / "resume.json"
     input_file.write_text(json.dumps(_sample_payload()), encoding="utf-8")
 
-    result = subprocess.run(
-        [sys.executable, "-m", "cvtool", "rendercv", str(input_file)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = run_cvtool_subprocess(["rendercv", str(input_file)])
 
     assert result.returncode == 0
     first_line = result.stdout.splitlines()[0]
@@ -129,12 +124,7 @@ def test_cli_rendercv_writes_output_file(tmp_path) -> None:
     output_file = tmp_path / "out.yaml"
     input_file.write_text(json.dumps(_sample_payload()), encoding="utf-8")
 
-    result = subprocess.run(
-        [sys.executable, "-m", "cvtool", "rendercv", str(input_file), "-o", str(output_file)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = run_cvtool_subprocess(["rendercv", str(input_file), "-o", str(output_file)])
 
     assert result.returncode == 0
     assert output_file.exists()
