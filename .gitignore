@@ -1,22 +1,33 @@
-# Packaging
-*.egg-info/
-
-# Python
+# Python cache and bytecode
 __pycache__/
-.pytest_cache/
-*.pyc
+*.py[cod]
 
-# RenderCV
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+
+# Packaging/build artifacts
+*.egg-info/
+build/
+dist/
+
+# Local environments
+.venv/
+venv/
+
+# Local tool state
+.opencode/
+
+# RenderCV and generated outputs
 .rendercv/
 *.log
+*.pdf
+*.html
+out.yaml
+rendercv.yaml
+
+# Local inputs
+resume.json
 
 # OS
 .DS_Store
-
-# Inputs
-resume.json
-
-# Outputs
-*.pdf 
-*.html
-out.yaml
