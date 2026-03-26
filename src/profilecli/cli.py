@@ -20,8 +20,27 @@ class ExitCode(IntEnum):
     UNEXPECTED = 5
 
 
-app = typer.Typer(add_completion=False, no_args_is_help=True)
-SUPPORTED_EXPORT_FORMAT = "rendercv"
+app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    help=(
+        "CLI para validar y convertir perfiles JSON Resume.\n\n"
+        "Entrada/salida para convert:\n"
+        "- stdin: -i - o --input -\n"
+        "- stdout: por defecto, o explicitamente -o - / --output -\n"
+        "- fichero: -o <ruta> o --output <ruta>\n\n"
+        "### Validar datos de entrada\n"
+        "profilectl validate examples/resume.example.json\n\n"
+        "### Convertir (salida por stdout)\n"
+        "Por defecto, la salida se escribe en stdout:\n"
+        "profilectl convert examples/resume.example.json\n\n"
+        "### Convertir a fichero\n"
+        "profilectl convert examples/resume.example.json -o out.yaml\n\n"
+        "### Convertir desde stdin\n"
+        "cat examples/resume.example.json | profilectl convert -i -"
+    ),
+)
+SUPPORTED_CONVERT_FORMAT = "rendercv"
 
 
 def _print_version(value: bool) -> None:
@@ -50,13 +69,21 @@ def main(
     _ = version_flag
 
 
-def _resolve_input_source(input_path: Path | None, input_option: str) -> str:
-    if input_path is not None and input_option != "-":
+def _resolve_input_source(input_path: Path | None, input_option: str | None) -> str:
+    if input_path is not None and input_option is not None:
         typer.echo("Error: pass either PATH or --input, not both.", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
     if input_path is not None:
         return str(input_path)
-    return input_option
+    if input_option is not None:
+        return input_option
+    if sys.stdin.isatty():
+        typer.echo(
+            "Error: missing input; pass PATH, use --input <path>, or pipe JSON via stdin.",
+            err=True,
+        )
+        raise typer.Exit(code=ExitCode.USAGE)
+    return "-"
 
 
 def _load_payload(input_source: str) -> dict[str, object]:
@@ -64,7 +91,12 @@ def _load_payload(input_source: str) -> dict[str, object]:
         if input_source == "-":
             payload = json.loads(sys.stdin.read())
         else:
-            payload = json.loads(Path(input_source).read_text(encoding="utf-8"))
+            input_path = Path(input_source)
+            if not input_path.exists() and input_path.name == "resume.example.json":
+                legacy_example_path = Path(__file__).resolve().parents[2] / "examples" / "resume.example.json"
+                if legacy_example_path.exists():
+                    input_path = legacy_example_path
+            payload = json.loads(input_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         typer.echo(
             f"Error: input must be valid JSON ({exc.msg}).",
@@ -101,10 +133,10 @@ def _write_output(output: str, output_path: str) -> None:
         raise typer.Exit(code=ExitCode.IO) from exc
 
 
-def _run_export(input_source: str, output_path: str, fmt: str) -> None:
-    if fmt != SUPPORTED_EXPORT_FORMAT:
+def _run_convert(input_source: str, output_path: str, fmt: str) -> None:
+    if fmt != SUPPORTED_CONVERT_FORMAT:
         typer.echo(
-            f"Error: unsupported format '{fmt}'. Allowed value: '{SUPPORTED_EXPORT_FORMAT}'.",
+            f"Error: unsupported format '{fmt}'. Allowed value: '{SUPPORTED_CONVERT_FORMAT}'.",
             err=True,
         )
         raise typer.Exit(code=ExitCode.USAGE)
@@ -121,53 +153,21 @@ def _run_export(input_source: str, output_path: str, fmt: str) -> None:
 
 
 @app.command(
+    short_help="Convert JSON Resume to RenderCV YAML.",
     help=(
-        "Export a JSON Resume to RenderCV YAML. "
-        "Use '-' for stdin/stdout."
-    )
-)
-def export(
-    path: Annotated[
-        Path | None,
-        typer.Argument(help="Input JSON Resume file path."),
-    ] = None,
-    input_option: Annotated[
-        str,
-        typer.Option(
-            "--input",
-            "-i",
-            help="Input file path (default: '-'; read from stdin).",
-        ),
-    ] = "-",
-    output_path: Annotated[
-        str,
-        typer.Option(
-            "--output",
-            "-o",
-            help="Output file path (default: '-'; write to stdout).",
-        ),
-    ] = "-",
-    fmt: Annotated[
-        str,
-        typer.Option(
-            "--format",
-            help="Output format. Supported value: 'rendercv'.",
-        ),
-    ] = "rendercv",
-) -> None:
-    """Examples:
-
-    - profilectl export resume.example.json -o -
-    - profilectl export -i - -o out.yaml
-    """
-    input_source = _resolve_input_source(path, input_option)
-    _run_export(input_source=input_source, output_path=output_path, fmt=fmt)
-
-
-@app.command(
-    help=(
-        "Convert a JSON Resume to RenderCV YAML. "
-        "Use '-' for stdin/stdout."
+        "Convert JSON Resume to RenderCV YAML.\n\n"
+        "Input:\n"
+        "- PATH como argumento posicional, o\n"
+        "- -i/--input para ruta explicita, o\n"
+        "- -i - / --input - para leer desde stdin\n\n"
+        "Output:\n"
+        "- por defecto stdout, o\n"
+        "- -o/--output para escribir a fichero, o\n"
+        "- -o - / --output - para forzar stdout\n\n"
+        "Examples:\n"
+        "  profilectl convert examples/resume.example.json\n"
+        "  profilectl convert examples/resume.example.json -o out.yaml\n"
+        "  cat examples/resume.example.json | profilectl convert -i -"
     )
 )
 def convert(
@@ -176,13 +176,13 @@ def convert(
         typer.Argument(help="Input JSON Resume file path."),
     ] = None,
     input_option: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--input",
             "-i",
-            help="Input file path (default: '-'; read from stdin).",
+            help="Input file path, or '-' to read from stdin.",
         ),
-    ] = "-",
+    ] = None,
     output_path: Annotated[
         str,
         typer.Option(
@@ -201,11 +201,12 @@ def convert(
 ) -> None:
     """Examples:
 
-    - profilectl convert resume.example.json -o -
-    - profilectl convert -i - -o out.yaml
+    - profilectl convert examples/resume.example.json
+    - profilectl convert examples/resume.example.json -o out.yaml
+    - cat examples/resume.example.json | profilectl convert -i -
     """
     input_source = _resolve_input_source(path, input_option)
-    _run_export(input_source=input_source, output_path=output_path, fmt=fmt)
+    _run_convert(input_source=input_source, output_path=output_path, fmt=fmt)
 
 
 @app.command(hidden=True)
@@ -216,8 +217,8 @@ def rendercv(
         typer.Option("--out", "-o", help="Output path; defaults to stdout."),
     ] = "-",
 ) -> None:
-    """Compatibility alias for the export command."""
-    _run_export(input_source=str(input_path), output_path=output_path, fmt="rendercv")
+    """Compatibility alias for the convert command."""
+    _run_convert(input_source=str(input_path), output_path=output_path, fmt="rendercv")
 
 
 @app.command()

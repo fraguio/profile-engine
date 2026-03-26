@@ -7,7 +7,7 @@ from tests.subprocess_cli import run_profilecli_subprocess
 
 
 def test_validate_accepts_resume_example() -> None:
-    input_file = Path(__file__).resolve().parents[1] / "resume.example.json"
+    input_file = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
 
     result = run_profilecli_subprocess(["validate", "--in", str(input_file)])
 
@@ -16,7 +16,7 @@ def test_validate_accepts_resume_example() -> None:
 
 
 def test_validate_accepts_resume_example_as_path_argument() -> None:
-    input_file = Path(__file__).resolve().parents[1] / "resume.example.json"
+    input_file = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
 
     result = run_profilecli_subprocess(["validate", str(input_file)])
 
