@@ -4,13 +4,26 @@
 ![Tests](https://img.shields.io/badge/tests-pytest-green)
 ![Status](https://img.shields.io/badge/status-active--development-orange)
 
-`profile-engine` es un pipeline backend pequeño y determinista para validar y transformar datos de perfil estructurados.
+`profile-engine` es un pipeline backend determinista diseñado para validar y transformar datos de perfil estructurados de forma predecible y automatizable.
 
-La interfaz pública es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`.
+La interfaz pública es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`, priorizando consistencia, trazabilidad y facilidad de integración en pipelines.
+
+## Caso de uso
+
+Este proyecto está diseñado para integrarse en flujos automatizados (CI/CD o pipelines locales) con el objetivo de generar y validar currículums de forma reproducible a partir de una fuente versionada.
+
+Flujo típico:
+
+1. Almacenar `resume.json` en un repositorio privado
+2. Validar estructura y contenido con `profilectl validate`
+3. Convertir al formato de salida (RenderCV) con `profilectl convert`
+4. Publicar el CV generado en un sitio estático (por ejemplo, GitHub Pages)
+
+Este enfoque garantiza consistencia, trazabilidad y control total sobre el proceso de generación del CV.
 
 ## Por qué existe
 
-La mayoría de herramientas de CV optimizan la presentación. Este proyecto optimiza fiabilidad operativa:
+La mayoría de herramientas de CV optimizan la presentación. Este proyecto prioriza fiabilidad operativa:
 
 - contrato de entrada explícito
 - transformación predecible
@@ -40,11 +53,46 @@ No intenta cubrir, por ahora, edición visual, múltiples targets de exportació
 
 ## Uso real
 
+### Ejemplo completo
+
+Entrada (`examples/resume.example.json`):
+
+```json
+{
+  "basics": {
+    "name": "Jane Doe",
+    "label": "Senior Backend Developer"
+  }
+}
+```
+
+Comando:
+
+```bash
+profilectl convert examples/resume.example.json
+```
+
+Salida (YAML generado):
+
+```yaml
+basics:
+  name: Jane Doe
+  label: Senior Backend Developer
+```
+
+### Automatización
+
+Puedes ejecutar el flujo completo mediante:
+
+```bash
+make build-cv
+```
+
 Ejemplos representativos de uso en local y en pipelines:
 
 ### Validar datos de entrada
 
-``` bash
+```bash
 profilectl validate examples/resume.example.json
 ```
 
@@ -52,13 +100,13 @@ profilectl validate examples/resume.example.json
 
 Por defecto, la salida se escribe en stdout:
 
-``` bash
+```bash
 profilectl convert examples/resume.example.json
 ```
 
 ### Convertir a fichero
 
-``` bash
+```bash
 profilectl convert examples/resume.example.json -o out.yaml
 ```
 
@@ -68,7 +116,7 @@ Puedes proporcionar la entrada a través de `stdin` usando `-i -`.
 
 #### Ejemplo con archivo (pipe)
 
-``` bash
+```bash
 cat examples/resume.example.json | profilectl convert -i -
 ```
 
@@ -76,19 +124,19 @@ cat examples/resume.example.json | profilectl convert -i -
 
 Uso de `printf` para evitar problemas de formato:
 
-``` bash
+```bash
 printf '%s' '{}' | profilectl convert -i -
 ```
 
 #### Ejemplo mínimo con `echo` (simple, pero menos robusto que `printf`)
 
-``` bash
+```bash
 echo '{}' | profilectl convert -i -
 ```
 
 #### Ejemplo inline más completo
 
-``` bash
+```bash
 printf '%s' '{
   "basics": {
     "name": "Jane Doe",
