@@ -6,7 +6,7 @@
 
 `profile-engine` es un pipeline backend determinista diseñado para validar y transformar datos de perfil estructurados de forma predecible y automatizable.
 
-La interfaz pública es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`, priorizando consistencia, trazabilidad y facilidad de integración en pipelines.
+La interfaz pública del pipeline es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`, priorizando consistencia, trazabilidad y facilidad de integración en pipelines.
 
 ## Caso de uso
 
@@ -144,6 +144,12 @@ printf '%s' '{
   }
 }' | profilectl convert -i -
 ```
+
+## Desarrollo
+
+El repositorio incluye soporte para Dev Container, proporcionando un entorno reproducible con Python 3.12 y dependencias preconfiguradas.
+
+También es posible trabajar en local mediante un entorno virtual (`.venv`).
 
 ## Arquitectura
 
