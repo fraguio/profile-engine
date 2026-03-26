@@ -4,60 +4,43 @@
 ![Tests](https://img.shields.io/badge/tests-pytest-green)
 ![Status](https://img.shields.io/badge/status-active--development-orange)
 
-`profile-engine` es una CLI orientada a backend diseñada para validar,
-transformar y renderizar perfiles profesionales estructurados (JSON
-Resume / RenderCV).
+`profile-engine` es un pipeline backend pequeño y determinista para validar y transformar datos de perfil estructurados.
 
-Aborda la generación de CV como un **pipeline de datos**, poniendo el
-foco en determinismo, validación y automatización, en lugar de en el
-formato.
+La interfaz pública es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`.
 
-------------------------------------------------------------------------
+## Por qué existe
 
-## Por qué existe este proyecto
+La mayoría de herramientas de CV optimizan la presentación. Este proyecto optimiza fiabilidad operativa:
 
-La mayoría de herramientas de CV se centran en el diseño y la
-presentación.
+- contrato de entrada explícito
+- transformación predecible
+- errores estables para automatización
+- ejecución por CLI para scripts y CI
 
-Este proyecto trata el problema como un sistema backend:
+## Qué demuestra
 
--   Validación estricta de entrada (JSON Schema)
--   Transformaciones explícitas y testeables
--   Salidas y manejo de errores deterministas
--   Diseño CLI-first orientado a automatización
+- diseño por capas: CLI, validación y transformación desacopladas
+- contratos de datos como frontera del sistema
+- comportamiento determinista para testing y pipelines reproducibles
+- decisiones técnicas pequeñas y trazables en `docs/decisions/`
+- simplicidad intencional: resolver un flujo concreto sin sobreingeniería
 
-Esto refleja cómo los sistemas backend reales gestionan pipelines de
-datos estructurados.
+## Capacidades clave
 
-------------------------------------------------------------------------
+- `validate`: valida JSON Resume con salida de error consistente
+- `convert`: transforma JSON Resume a RenderCV YAML
+- entrada por archivo o `stdin`; salida por `stdout` o fichero
+- ejecución estable en local, scripts y CI
 
-## Qué demuestra este proyecto
+## Alcance
 
--   Diseño de CLI orientado a backend (separación clara de
-    responsabilidades)
--   Validación determinista y reporting de errores consistente
--   Pipelines de transformación de datos (JSON → YAML)
--   Workflows preparados para automatización (local y CI)
--   Estructura mantenible para desarrollo asistido por IA
+Resuelve un problema acotado: convertir de forma confiable un contrato JSON conocido a un formato de salida concreto.
 
-------------------------------------------------------------------------
+No intenta cubrir, por ahora, edición visual, múltiples targets de exportación, versionado de perfiles ni orquestación distribuida.
 
-## Funcionalidades principales
+## Uso real
 
--   Validar JSON Resume contra su schema con errores deterministas
--   Convertir perfiles estructurados a YAML compatible con RenderCV
--   CLI diseñada para workflows reproducibles y automatizables
--   Suite de tests completa con pytest
-
-------------------------------------------------------------------------
-
-## Uso
-
-Instalación en modo editable:
-
-``` bash
-pip install -e .
-```
+Ejemplos representativos de uso en local y en pipelines:
 
 ### Validar datos de entrada
 
@@ -114,38 +97,12 @@ printf '%s' '{
 }' | profilectl convert -i -
 ```
 
-
-------------------------------------------------------------------------
-
 ## Arquitectura
 
-Ver [`docs/architecture.md`](docs/architecture.md)
+`docs/architecture.md`
 
-Flujo de alto nivel:
+## Documentación relacionada
 
-    Input (JSON Resume)
-       ↓
-    Validación
-       ↓
-    Transformación
-       ↓
-    Output (RenderCV YAML)
-
-------------------------------------------------------------------------
-
-## Documentación
-
--   Arquitectura: `docs/architecture.md`
--   Decisiones: `docs/decisions/`
--   Flujo principal: `docs/workflows/golden-path.md`
--   Runbook local: `docs/runbooks/local-development.md`
-
-------------------------------------------------------------------------
-
-## Estructura del proyecto
-
-    src/profilecli/    CLI y lógica principal
-    schemas/           Schemas JSON Resume / RenderCV
-    tests/             Suite de tests con pytest
-    docs/              Arquitectura, decisiones y workflows
-    examples/          Ejemplos de entrada
+- `docs/architecture.md`
+- `docs/workflows/golden-path.md`
+- `docs/decisions/`

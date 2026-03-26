@@ -1,20 +1,45 @@
 # Golden Path
 
-## Objetivo
+## Flujo esperado del dato
 
-Definir el flujo minimo para cambios seguros en `profile-engine`.
+El flujo operativo de `profile-engine` es lineal y determinista:
 
-## Pasos
+1. Ingesta de JSON Resume desde archivo o `stdin`.
+2. Validación de contrato de entrada.
+3. Transformación a estructura RenderCV.
+4. Emisión de YAML por `stdout` o fichero.
 
-1. Leer `README.md`, `docs/architecture.md` y decisiones en `docs/decisions/`.
-2. Limitar el alcance a cambios pequenos y focalizados.
-3. Implementar solo en archivos necesarios.
-4. Ejecutar `pytest` si cambia comportamiento o salida.
-5. Mantener tests autosuficientes: no depender de `pip install -e .`; en subprocess resolver `src` via `PYTHONPATH`.
-6. Entregar resumen, diff por archivo y commit sugerido.
+La ruta principal es `convert`; `validate` permite validar de forma aislada cuando se necesita cortar antes del mapeo.
 
-## Criterios de salida
+## Ejecución operativa
 
-- CLI `profilectl` compatible.
-- Salidas deterministas conservadas.
-- Sin artefactos locales en el diff.
+```bash
+profilectl validate examples/resume.example.json
+```
+
+```bash
+profilectl convert examples/resume.example.json
+```
+
+```bash
+profilectl convert examples/resume.example.json -o out.yaml
+```
+
+```bash
+cat examples/resume.example.json | profilectl convert -i -
+```
+
+## Uso en automatización
+
+El diseño de CLI permite encadenar el pipeline en scripts y CI sin adaptadores extra:
+
+- lectura por `stdin` para composición
+- salida por `stdout` para piping
+- códigos de salida estables para control de errores
+- comportamiento determinista para pruebas repetibles
+
+## Garantías del sistema
+
+- `profilectl` mantiene compatibilidad de comandos y banderas existentes.
+- Para una misma entrada, validación y conversión producen resultados estables.
+- El repositorio no incorpora artefactos fuera de alcance.
