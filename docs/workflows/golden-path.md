@@ -15,6 +15,6 @@ Definir el flujo minimo para cambios seguros en `profile-engine`.
 
 ## Criterios de salida
 
-- CLI `cvtool` compatible.
+- CLI `profilectl` compatible.
 - Salidas deterministas conservadas.
 - Sin artefactos locales en el diff.

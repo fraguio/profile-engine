@@ -28,28 +28,28 @@ pip install .[dev]
 Con instalacion editable (recomendado):
 
 ```bash
-cvtool validate --in resume.example.json
-cvtool export resume.example.json -o out.yaml
+profilectl validate --in examples/resume.example.json
+profilectl convert examples/resume.example.json -o out.yaml
 ```
 
 Sin instalacion editable (alternativa):
 
 ```bash
-PYTHONPATH=src python -m profilecli validate --in resume.example.json
-PYTHONPATH=src python -m profilecli export resume.example.json -o out.yaml
+PYTHONPATH=src python -m profilecli validate --in examples/resume.example.json
+PYTHONPATH=src python -m profilecli convert examples/resume.example.json -o out.yaml
 ```
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m profilecli validate --in resume.example.json
-python -m profilecli export resume.example.json -o out.yaml
+python -m profilecli validate --in examples/resume.example.json
+python -m profilecli convert examples/resume.example.json -o out.yaml
 ```
 
 ## Flujo local rapido
 
 ```bash
-PYTHONPATH=src python -m profilecli validate --in resume.example.json
-PYTHONPATH=src python -m profilecli export resume.example.json -o out.yaml
+PYTHONPATH=src python -m profilecli validate --in examples/resume.example.json
+PYTHONPATH=src python -m profilecli convert examples/resume.example.json -o out.yaml
 pytest
 ```
 
