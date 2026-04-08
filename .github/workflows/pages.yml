@@ -34,7 +34,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install profilectl and RenderCV
-        run: pip install . "rendercv>=2.8,<2.9"
+        run: pip install . "rendercv[full]>=2.8,<2.9"
 
       - name: Checkout profile-data
         uses: actions/checkout@v4
