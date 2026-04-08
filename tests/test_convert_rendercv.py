@@ -59,22 +59,25 @@ def test_convert_sets_cv_name_and_design_theme() -> None:
 def test_experience_count_matches_work_length() -> None:
     payload = _sample_payload()
     result = convert_jsonresume_to_rendercv(payload)
-    assert len(result["experience"]) == len(payload["work"])
+    assert len(result["cv"]["sections"]["experience"]) == len(payload["work"])
 
 
 def test_education_area_from_title() -> None:
     result = convert_jsonresume_to_rendercv(_sample_payload())
-    assert result["education"][0]["area"] == "Computer Science"
+    assert result["cv"]["sections"]["education"][0]["area"] == "Computer Science"
 
 
 def test_education_in_progress_sets_end_date_present() -> None:
     result = convert_jsonresume_to_rendercv(_sample_payload())
-    assert result["education"][0]["date"]["end_date"] == "present"
+    assert result["cv"]["sections"]["education"][0]["end_date"] == "present"
 
 
 def test_skills_appends_idiomas_entry_from_languages() -> None:
     result = convert_jsonresume_to_rendercv(_sample_payload())
-    idiomas_entry = next((item for item in result["skills"] if item.get("label") == "Idiomas"), None)
+    idiomas_entry = next(
+        (item for item in result["cv"]["sections"]["skills"] if item.get("label") == "Idiomas"),
+        None,
+    )
     assert idiomas_entry is not None
     assert "Espanol (Nativo)" in idiomas_entry["details"]
     assert "Ingles (Profesional)" in idiomas_entry["details"]
@@ -90,18 +93,15 @@ def test_date_normalization_cases() -> None:
     payload["education"] = [{"institution": "Uni", "title": "Math", "startDate": "2020-01"}]
     result = convert_jsonresume_to_rendercv(payload)
 
-    assert result["experience"][0]["date"]["end_date"] == "present"
-    assert "date" in result["education"][0]
-    assert "end_date" not in result["education"][0]["date"]
+    assert result["cv"]["sections"]["experience"][0]["end_date"] == "present"
+    assert "start_date" in result["cv"]["sections"]["education"][0]
+    assert "end_date" not in result["cv"]["sections"]["education"][0]
 
 
 def test_required_top_level_keys_present_when_empty() -> None:
     result = convert_jsonresume_to_rendercv({})
-    assert set(result.keys()) == {"cv", "experience", "education", "skills", "design"}
+    assert set(result.keys()) == {"cv", "design"}
     assert result["cv"] == {}
-    assert result["experience"] == []
-    assert result["education"] == []
-    assert result["skills"] == []
     assert result["design"] == {"theme": "classic"}
 
 
@@ -115,7 +115,7 @@ def test_cli_rendercv_stdout_contains_schema_header(tmp_path) -> None:
     first_line = result.stdout.splitlines()[0]
     assert (
         first_line
-        == "# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.6/schema.json"
+        == "# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json"
     )
 
 
@@ -131,5 +131,5 @@ def test_cli_rendercv_writes_output_file(tmp_path) -> None:
     first_line = output_file.read_text(encoding="utf-8").splitlines()[0]
     assert (
         first_line
-        == "# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.6/schema.json"
+        == "# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json"
     )

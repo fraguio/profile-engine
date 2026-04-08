@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.6/schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json
 cv:
   name: Jane Doe
   headline: Senior Backend Developer
@@ -7,29 +7,27 @@ cv:
     Summary:
     - Experienced backend developer with focus on clean architecture and scalable
       systems.
-experience:
-- company: Acme Corp
-  position: Backend Engineer
-  date:
-    start_date: 2023-01
-    end_date: 2024-06
-  summary: Worked on microservices architecture.
-  highlights:
-  - Developed REST APIs with FastAPI
-  - Implemented CI/CD pipelines
-education:
-- institution: University X
-  area: Computer Science
-  date:
-    start_date: 2020-09
-    end_date: 2023-06
-  highlights:
-  - Focus on distributed systems
-  - Final project on microservices
-skills:
-- label: Backend
-  details: Python, FastAPI, PostgreSQL
-- label: Idiomas
-  details: Spanish (Native), English (Professional)
+    experience:
+    - company: Acme Corp
+      position: Backend Engineer
+      start_date: 2023-01
+      end_date: 2024-06
+      summary: Worked on microservices architecture.
+      highlights:
+      - Developed REST APIs with FastAPI
+      - Implemented CI/CD pipelines
+    education:
+    - institution: University X
+      area: Computer Science
+      start_date: 2020-09
+      end_date: 2023-06
+      highlights:
+      - Focus on distributed systems
+      - Final project on microservices
+    skills:
+    - label: Backend
+      details: Python, FastAPI, PostgreSQL
+    - label: Idiomas
+      details: Spanish (Native), English (Professional)
 design:
   theme: classic

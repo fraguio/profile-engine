@@ -9,7 +9,7 @@ import yaml
 
 SCHEMA_HEADER = (
     "# yaml-language-server: "
-    "$schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.6/schema.json"
+    "$schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json"
 )
 
 
@@ -122,15 +122,12 @@ def map_experience(work_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if isinstance(location, str) and location.strip():
             mapped["location"] = location.strip()
 
-        date: dict[str, str] = {}
         start_date = normalize_date(item.get("startDate"))
         if start_date:
-            date["start_date"] = start_date
+            mapped["start_date"] = start_date
 
         end_date = normalize_date(item.get("endDate"), is_end=True)
-        date["end_date"] = end_date if end_date else "present"
-        if date:
-            mapped["date"] = date
+        mapped["end_date"] = end_date if end_date else "present"
 
         summary = item.get("summary")
         if isinstance(summary, str) and summary.strip():
@@ -140,7 +137,9 @@ def map_experience(work_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if highlights:
             mapped["highlights"] = highlights
 
-        experience.append(prune_empty(mapped))
+        cleaned = prune_empty(mapped)
+        if cleaned:
+            experience.append(cleaned)
 
     return experience
 
@@ -164,10 +163,9 @@ def map_education(education_items: list[dict[str, Any]]) -> list[dict[str, Any]]
         if isinstance(study_type, str) and study_type.strip():
             mapped["degree"] = study_type.strip()
 
-        date: dict[str, str] = {}
         start_date = normalize_date(item.get("startDate"))
         if start_date:
-            date["start_date"] = start_date
+            mapped["start_date"] = start_date
 
         is_in_progress = item.get("status") == "in_progress"
         end_date = normalize_date(
@@ -176,9 +174,7 @@ def map_education(education_items: list[dict[str, Any]]) -> list[dict[str, Any]]
             in_progress=is_in_progress,
         )
         if end_date:
-            date["end_date"] = end_date
-        if date:
-            mapped["date"] = date
+            mapped["end_date"] = end_date
 
         details = _list_from_text_or_list(item.get("details"))
         notes = item.get("notes")
@@ -187,7 +183,9 @@ def map_education(education_items: list[dict[str, Any]]) -> list[dict[str, Any]]
         if details:
             mapped["highlights"] = details
 
-        education.append(prune_empty(mapped))
+        cleaned = prune_empty(mapped)
+        if cleaned:
+            education.append(cleaned)
 
     return education
 
@@ -272,23 +270,36 @@ def convert_jsonresume_to_rendercv(payload: dict[str, Any]) -> dict[str, Any]:
         item for item in languages_raw if isinstance(item, dict)
     ] if isinstance(languages_raw, list) else []
 
+    cv = prune_empty(build_cv_section(basics))
+    if not isinstance(cv, dict):
+        cv = {}
+
+    sections = cv.get("sections")
+    if not isinstance(sections, dict):
+        sections = {}
+
+    experience_entries = map_experience(work)
+    if experience_entries:
+        sections["experience"] = experience_entries
+
+    education_entries = map_education(education)
+    if education_entries:
+        sections["education"] = education_entries
+
+    skills_entries = map_skills(skills, languages)
+    if skills_entries:
+        sections["skills"] = skills_entries
+
+    if sections:
+        cv["sections"] = sections
+
     doc: dict[str, Any] = {
-        "cv": prune_empty(build_cv_section(basics)),
-        "experience": map_experience(work),
-        "education": map_education(education),
-        "skills": map_skills(skills, languages),
+        "cv": cv,
         "design": {"theme": "classic"},
     }
 
-    # Required top-level keys must always exist.
     if not isinstance(doc.get("cv"), dict):
         doc["cv"] = {}
-    if not isinstance(doc.get("experience"), list):
-        doc["experience"] = []
-    if not isinstance(doc.get("education"), list):
-        doc["education"] = []
-    if not isinstance(doc.get("skills"), list):
-        doc["skills"] = []
     if not isinstance(doc.get("design"), dict):
         doc["design"] = {"theme": "classic"}
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from enum import IntEnum
 from importlib.metadata import PackageNotFoundError, version
@@ -152,6 +153,50 @@ def _run_convert(input_source: str, output_path: str, fmt: str) -> None:
         raise typer.Exit(code=ExitCode.UNEXPECTED) from exc
 
 
+def _run_render_html(input_yaml_path: str, html_output_path: str) -> None:
+    input_yaml = Path(input_yaml_path)
+    if not input_yaml.exists():
+        typer.echo(
+            f"Error: I/O error while reading input '{input_yaml_path}': file not found",
+            err=True,
+        )
+        raise typer.Exit(code=ExitCode.IO)
+
+    output_html = Path(html_output_path)
+    output_html.parent.mkdir(parents=True, exist_ok=True)
+
+    command = [
+        "rendercv",
+        "render",
+        str(input_yaml),
+        "--html-path",
+        str(output_html.resolve()),
+        "--dont-generate-pdf",
+        "--dont-generate-png",
+        "--dont-generate-typst",
+        "--quiet",
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        typer.echo("Error: 'rendercv' command not found. Install RenderCV first.", err=True)
+        raise typer.Exit(code=ExitCode.UNEXPECTED) from exc
+    except OSError as exc:
+        typer.echo(f"Error: I/O error while running rendercv: {exc}", err=True)
+        raise typer.Exit(code=ExitCode.IO) from exc
+
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "unknown error").strip()
+        typer.echo(f"Error: rendercv render failed: {detail}", err=True)
+        raise typer.Exit(code=ExitCode.UNEXPECTED)
+
+
 @app.command(
     short_help="Convert JSON Resume to RenderCV YAML.",
     help=(
@@ -219,6 +264,88 @@ def rendercv(
 ) -> None:
     """Compatibility alias for the convert command."""
     _run_convert(input_source=str(input_path), output_path=output_path, fmt="rendercv")
+
+
+@app.command("render-html", short_help="Render HTML from RenderCV YAML.")
+def render_html(
+    input_path: Annotated[
+        Path,
+        typer.Argument(help="Input RenderCV YAML file path."),
+    ],
+    output_path: Annotated[
+        str,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Output HTML file path.",
+        ),
+    ] = "output/index.html",
+) -> None:
+    if output_path == "-":
+        typer.echo("Error: output path for render-html cannot be stdout ('-').", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+
+    _run_render_html(input_yaml_path=str(input_path), html_output_path=output_path)
+
+
+@app.command(short_help="Validate, convert, and render HTML in one command.")
+def html(
+    path: Annotated[
+        Path | None,
+        typer.Argument(help="Input JSON Resume path."),
+    ] = None,
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--in", help="Input JSON Resume path."),
+    ] = None,
+    output_path: Annotated[
+        str,
+        typer.Option(
+            "--output",
+            "-o",
+            help="Output RenderCV YAML file path.",
+        ),
+    ] = "output/rendercv_CV.yaml",
+    html_output_path: Annotated[
+        str,
+        typer.Option(
+            "--html-output",
+            help="Output HTML file path.",
+        ),
+    ] = "output/index.html",
+) -> None:
+    if path is not None and input_path is not None:
+        typer.echo("Error: pass either PATH or --in, not both.", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+    if path is None and input_path is None:
+        typer.echo("Error: missing input path; pass PATH or --in.", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+    if output_path == "-":
+        typer.echo("Error: output path for html cannot be stdout ('-').", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+    if html_output_path == "-":
+        typer.echo("Error: html output path for html cannot be stdout ('-').", err=True)
+        raise typer.Exit(code=ExitCode.USAGE)
+
+    resolved_input_path = path if path is not None else input_path
+    assert resolved_input_path is not None
+
+    try:
+        errors = validate_jsonresume(resolved_input_path)
+    except json.JSONDecodeError as exc:
+        typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
+    except OSError as exc:
+        typer.echo(f"Error: I/O error while reading input '{resolved_input_path}': {exc}", err=True)
+        raise typer.Exit(code=ExitCode.IO) from exc
+
+    if errors:
+        for error in errors:
+            typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE)
+
+    _run_convert(input_source=str(resolved_input_path), output_path=output_path, fmt="rendercv")
+    _run_render_html(input_yaml_path=output_path, html_output_path=html_output_path)
 
 
 @app.command()

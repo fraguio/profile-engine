@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -85,3 +86,73 @@ def test_convert_json_root_must_be_object() -> None:
     result = runner.invoke(app, ["convert", "-i", "-", "-o", "-"], input="[]")
     assert result.exit_code == 3
     assert "Error: JSON root must be an object" in result.output
+
+
+def test_render_html_missing_input_returns_io_error() -> None:
+    result = runner.invoke(app, ["render-html", "missing.yaml"])
+    assert result.exit_code == 4
+    assert "I/O error" in result.output
+
+
+def test_render_html_rejects_stdout_output_path() -> None:
+    yaml_path = Path(__file__).resolve().parents[1] / "examples" / "rendercv.example.yaml"
+    result = runner.invoke(app, ["render-html", str(yaml_path), "--output", "-"])
+    assert result.exit_code == 2
+
+
+def test_render_html_runs_rendercv(monkeypatch, tmp_path) -> None:
+    input_yaml = tmp_path / "rendercv.yaml"
+    input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
+    output_html = tmp_path / "site" / "index.html"
+
+    called: dict[str, object] = {}
+
+    def fake_run(command: list[str], capture_output: bool, text: bool, check: bool) -> subprocess.CompletedProcess[str]:
+        called["command"] = command
+        called["capture_output"] = capture_output
+        called["text"] = text
+        called["check"] = check
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = runner.invoke(app, ["render-html", str(input_yaml), "--output", str(output_html)])
+
+    assert result.exit_code == 0
+    command = called["command"]
+    assert isinstance(command, list)
+    assert command[:2] == ["rendercv", "render"]
+    assert "--html-path" in command
+    assert str(output_html.resolve()) in command
+
+
+def test_html_runs_validate_convert_and_render(monkeypatch, tmp_path) -> None:
+    resume_path = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
+    yaml_output = tmp_path / "output" / "rendercv_CV.yaml"
+    html_output = tmp_path / "output" / "index.html"
+
+    captured: dict[str, str] = {}
+
+    def fake_render(input_yaml_path: str, html_output_path: str) -> None:
+        captured["input_yaml_path"] = input_yaml_path
+        captured["html_output_path"] = html_output_path
+
+    monkeypatch.setattr("profilecli.cli._run_render_html", fake_render)
+
+    result = runner.invoke(
+        app,
+        [
+            "html",
+            "--in",
+            str(resume_path),
+            "--output",
+            str(yaml_output),
+            "--html-output",
+            str(html_output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert yaml_output.exists()
+    assert captured["input_yaml_path"] == str(yaml_output)
+    assert captured["html_output_path"] == str(html_output)

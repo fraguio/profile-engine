@@ -25,6 +25,7 @@ venv/
 *.html
 out.yaml
 rendercv.yaml
+output/
 
 # Local inputs
 resume.json

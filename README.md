@@ -82,11 +82,16 @@ basics:
 
 ### Automatización
 
-Puedes ejecutar el flujo completo mediante:
+Puedes ejecutar el flujo completo hasta HTML publicable mediante:
 
 ```bash
-make build-cv
+make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HTML_OUT="output/index.html"
 ```
+
+Esto genera:
+
+- `output/rendercv_CV.yaml`
+- `output/index.html`
 
 Ejemplos representativos de uso en local y en pipelines:
 
@@ -108,6 +113,18 @@ profilectl convert examples/resume.example.json
 
 ```bash
 profilectl convert examples/resume.example.json -o out.yaml
+```
+
+### Pipeline E2E (validate -> convert -> render HTML)
+
+```bash
+make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HTML_OUT="output/index.html"
+```
+
+Comando equivalente directo con `profilectl`:
+
+```bash
+profilectl html --in "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
 ```
 
 ### Convertir desde stdin

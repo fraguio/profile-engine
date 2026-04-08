@@ -1,9 +1,18 @@
-.PHONY: validate convert build-cv
+.PHONY: validate convert render-html html build-cv
+
+IN ?= ../profile-data/data/resume.json
+OUT ?= output/rendercv_CV.yaml
+HTML_OUT ?= output/index.html
 
 validate:
-	profilectl validate examples/resume.example.json
+	profilectl validate --in "$(IN)"
 
 convert:
-	profilectl convert examples/resume.example.json -o out.yaml
+	profilectl convert --input "$(IN)" --output "$(OUT)"
 
-build-cv: validate convert
+render-html:
+	profilectl render-html "$(OUT)" --output "$(HTML_OUT)"
+
+html: validate convert render-html
+
+build-cv: html

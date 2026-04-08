@@ -8,6 +8,7 @@ El flujo operativo de `profile-engine` es lineal y determinista:
 2. Validación de contrato de entrada.
 3. Transformación a estructura RenderCV.
 4. Emisión de YAML por `stdout` o fichero.
+5. Render de HTML publicable con RenderCV.
 
 La ruta principal es `convert`; `validate` permite validar de forma aislada cuando se necesita cortar antes del mapeo.
 
@@ -23,6 +24,18 @@ profilectl convert examples/resume.example.json
 
 ```bash
 profilectl convert examples/resume.example.json -o out.yaml
+```
+
+```bash
+rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --dont-generate-png --dont-generate-typst
+```
+
+```bash
+make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HTML_OUT="output/index.html"
+```
+
+```bash
+profilectl html --in "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
 ```
 
 ```bash
