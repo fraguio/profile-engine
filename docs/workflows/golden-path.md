@@ -35,7 +35,7 @@ make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HT
 ```
 
 ```bash
-profilectl html --in "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
+profilectl html --input "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
 ```
 
 ```bash

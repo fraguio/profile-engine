@@ -61,7 +61,7 @@ def test_convert_without_args_reads_from_piped_stdin() -> None:
 def test_resolve_input_source_without_args_in_tty_returns_usage_error(monkeypatch) -> None:
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     with pytest.raises(typer.Exit) as excinfo:
-        _resolve_input_source(None, None)
+        _resolve_input_source(None, None, allow_stdin=True)
     assert excinfo.value.exit_code == ExitCode.USAGE
 
 
@@ -69,12 +69,6 @@ def test_convert_missing_file_returns_io_error() -> None:
     result = runner.invoke(app, ["convert", "missing.json", "-o", "-"])
     assert result.exit_code == 4
     assert "I/O error" in result.output
-
-
-def test_convert_invalid_format_returns_usage_error() -> None:
-    resume_path = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
-    result = runner.invoke(app, ["convert", str(resume_path), "--format", "foo", "-o", "-"])
-    assert result.exit_code == 2
 
 
 def test_convert_invalid_json_from_stdin_returns_parse_error() -> None:
@@ -100,6 +94,13 @@ def test_render_html_rejects_stdout_output_path() -> None:
     assert result.exit_code == 2
 
 
+def test_render_html_rejects_json_resume_input() -> None:
+    resume_path = Path(__file__).resolve().parents[1] / "examples" / "resume.json"
+    result = runner.invoke(app, ["render-html", str(resume_path)])
+    assert result.exit_code == 2
+    assert "expects RenderCV YAML input" in result.output
+
+
 def test_render_html_runs_rendercv(monkeypatch, tmp_path) -> None:
     input_yaml = tmp_path / "rendercv.yaml"
     input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
@@ -122,8 +123,56 @@ def test_render_html_runs_rendercv(monkeypatch, tmp_path) -> None:
     command = called["command"]
     assert isinstance(command, list)
     assert command[:2] == ["rendercv", "render"]
+    assert "--markdown-path" in command
     assert "--html-path" in command
     assert str(output_html.resolve()) in command
+
+
+def test_render_html_retries_without_quiet_to_get_error_detail(monkeypatch, tmp_path) -> None:
+    input_yaml = tmp_path / "rendercv.yaml"
+    input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
+
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], capture_output: bool, text: bool, check: bool) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        if "--quiet" in command:
+            return subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr="")
+        return subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr="rendercv validation error")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = runner.invoke(app, ["render-html", str(input_yaml)])
+
+    assert result.exit_code == 5
+    assert "rendercv validation error" in result.output
+    assert len(calls) == 2
+    assert "--quiet" in calls[0]
+    assert "--quiet" not in calls[1]
+
+
+def test_render_html_cleans_temporary_markdown_file(monkeypatch, tmp_path) -> None:
+    input_yaml = tmp_path / "rendercv.yaml"
+    input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
+    output_html = tmp_path / "site" / "index.html"
+
+    captured: dict[str, Path] = {}
+
+    def fake_run(command: list[str], capture_output: bool, text: bool, check: bool) -> subprocess.CompletedProcess[str]:
+        markdown_index = command.index("--markdown-path") + 1
+        markdown_path = Path(command[markdown_index])
+        markdown_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown_path.write_text("temp markdown", encoding="utf-8")
+        captured["markdown_path"] = markdown_path
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = runner.invoke(app, ["render-html", str(input_yaml), "--output", str(output_html)])
+
+    assert result.exit_code == 0
+    markdown_path = captured["markdown_path"]
+    assert not markdown_path.exists()
 
 
 def test_html_runs_validate_convert_and_render(monkeypatch, tmp_path) -> None:
@@ -143,7 +192,7 @@ def test_html_runs_validate_convert_and_render(monkeypatch, tmp_path) -> None:
         app,
         [
             "html",
-            "--in",
+            "--input",
             str(resume_path),
             "--output",
             str(yaml_output),
@@ -156,3 +205,39 @@ def test_html_runs_validate_convert_and_render(monkeypatch, tmp_path) -> None:
     assert yaml_output.exists()
     assert captured["input_yaml_path"] == str(yaml_output)
     assert captured["html_output_path"] == str(html_output)
+
+
+def test_validate_help_shows_input_option() -> None:
+    result = runner.invoke(app, ["validate", "--help"])
+    assert result.exit_code == 0
+    assert "input" in result.output
+    assert "--input" in result.output
+
+
+def test_convert_help_does_not_show_format() -> None:
+    result = runner.invoke(app, ["convert", "--help"])
+    assert result.exit_code == 0
+    assert "--format" not in result.output
+
+
+def test_cli_does_not_expose_theme_or_locale_options() -> None:
+    result_convert = runner.invoke(app, ["convert", "--help"])
+    result_html = runner.invoke(app, ["html", "--help"])
+    assert result_convert.exit_code == 0
+    assert result_html.exit_code == 0
+    assert "--theme" not in result_convert.output
+    assert "--locale" not in result_convert.output
+    assert "--theme" not in result_html.output
+    assert "--locale" not in result_html.output
+
+
+def test_render_html_accepts_input_option(monkeypatch, tmp_path) -> None:
+    input_yaml = tmp_path / "rendercv.yaml"
+    input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
+
+    def fake_run(command: list[str], capture_output: bool, text: bool, check: bool) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    result = runner.invoke(app, ["render-html", "--input", str(input_yaml)])
+    assert result.exit_code == 0

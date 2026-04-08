@@ -25,23 +25,12 @@ app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     help=(
-        "CLI para validar y convertir perfiles JSON Resume.\n\n"
-        "Entrada/salida para convert:\n"
-        "- stdin: -i - o --input -\n"
-        "- stdout: por defecto, o explicitamente -o - / --output -\n"
-        "- fichero: -o <ruta> o --output <ruta>\n\n"
-        "### Validar datos de entrada\n"
-        "profilectl validate examples/resume.example.json\n\n"
-        "### Convertir (salida por stdout)\n"
-        "Por defecto, la salida se escribe en stdout:\n"
-        "profilectl convert examples/resume.example.json\n\n"
-        "### Convertir a fichero\n"
-        "profilectl convert examples/resume.example.json -o out.yaml\n\n"
-        "### Convertir desde stdin\n"
-        "cat examples/resume.example.json | profilectl convert -i -"
+        "Validate and transform JSON Resume data.\n\n"
+        "Core flow:\n"
+        "validate -> convert -> render-html\n"
+        "or use html for the full pipeline."
     ),
 )
-SUPPORTED_CONVERT_FORMAT = "rendercv"
 
 
 def _print_version(value: bool) -> None:
@@ -70,21 +59,31 @@ def main(
     _ = version_flag
 
 
-def _resolve_input_source(input_path: Path | None, input_option: str | None) -> str:
-    if input_path is not None and input_option is not None:
-        typer.echo("Error: pass either PATH or --input, not both.", err=True)
+def _resolve_input_source(
+    input_arg: Path | None,
+    input_option: str | None,
+    *,
+    allow_stdin: bool,
+) -> str:
+    if input_arg is not None and input_option is not None:
+        typer.echo("Error: pass either input argument or --input, not both.", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
-    if input_path is not None:
-        return str(input_path)
+    if input_arg is not None:
+        return str(input_arg)
     if input_option is not None:
         return input_option
-    if sys.stdin.isatty():
+
+    if allow_stdin and not sys.stdin.isatty():
+        return "-"
+
+    if allow_stdin:
         typer.echo(
-            "Error: missing input; pass PATH, use --input <path>, or pipe JSON via stdin.",
+            "Error: missing input; pass input argument, use --input <path>, or pipe JSON via stdin.",
             err=True,
         )
-        raise typer.Exit(code=ExitCode.USAGE)
-    return "-"
+    else:
+        typer.echo("Error: missing input; pass input argument or --input <path>.", err=True)
+    raise typer.Exit(code=ExitCode.USAGE)
 
 
 def _load_payload(input_source: str) -> dict[str, object]:
@@ -134,14 +133,7 @@ def _write_output(output: str, output_path: str) -> None:
         raise typer.Exit(code=ExitCode.IO) from exc
 
 
-def _run_convert(input_source: str, output_path: str, fmt: str) -> None:
-    if fmt != SUPPORTED_CONVERT_FORMAT:
-        typer.echo(
-            f"Error: unsupported format '{fmt}'. Allowed value: '{SUPPORTED_CONVERT_FORMAT}'.",
-            err=True,
-        )
-        raise typer.Exit(code=ExitCode.USAGE)
-
+def _run_convert(input_source: str, output_path: str) -> None:
     try:
         payload = _load_payload(input_source)
         yaml_output = dump_rendercv_yaml(convert_jsonresume_to_rendercv(payload))
@@ -162,13 +154,24 @@ def _run_render_html(input_yaml_path: str, html_output_path: str) -> None:
         )
         raise typer.Exit(code=ExitCode.IO)
 
+    if input_yaml.suffix.lower() == ".json":
+        typer.echo(
+            "Error: render-html expects RenderCV YAML input, not JSON Resume. "
+            "Use 'profilectl html' or run 'profilectl convert' first.",
+            err=True,
+        )
+        raise typer.Exit(code=ExitCode.USAGE)
+
     output_html = Path(html_output_path)
     output_html.parent.mkdir(parents=True, exist_ok=True)
+    markdown_tmp = output_html.with_suffix(f"{output_html.suffix}.md.tmp")
 
     command = [
         "rendercv",
         "render",
         str(input_yaml),
+        "--markdown-path",
+        str(markdown_tmp.resolve()),
         "--html-path",
         str(output_html.resolve()),
         "--dont-generate-pdf",
@@ -178,54 +181,74 @@ def _run_render_html(input_yaml_path: str, html_output_path: str) -> None:
     ]
 
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except FileNotFoundError as exc:
-        typer.echo("Error: 'rendercv' command not found. Install RenderCV first.", err=True)
-        raise typer.Exit(code=ExitCode.UNEXPECTED) from exc
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+        except FileNotFoundError as exc:
+            typer.echo("Error: 'rendercv' command not found. Install RenderCV first.", err=True)
+            raise typer.Exit(code=ExitCode.UNEXPECTED) from exc
+        except OSError as exc:
+            typer.echo(f"Error: I/O error while running rendercv: {exc}", err=True)
+            raise typer.Exit(code=ExitCode.IO) from exc
+
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout).strip()
+            if not detail:
+                fallback_command = [item for item in command if item != "--quiet"]
+                fallback_result = subprocess.run(
+                    fallback_command,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                detail = (fallback_result.stderr or fallback_result.stdout).strip()
+            if not detail:
+                detail = "unknown error"
+            typer.echo(f"Error: rendercv render failed: {detail}", err=True)
+            raise typer.Exit(code=ExitCode.UNEXPECTED)
+    finally:
+        try:
+            markdown_tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _run_validate(input_path: Path) -> None:
+    try:
+        errors = validate_jsonresume(input_path)
+    except json.JSONDecodeError as exc:
+        typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
     except OSError as exc:
-        typer.echo(f"Error: I/O error while running rendercv: {exc}", err=True)
+        typer.echo(f"Error: I/O error while reading input '{input_path}': {exc}", err=True)
         raise typer.Exit(code=ExitCode.IO) from exc
 
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "unknown error").strip()
-        typer.echo(f"Error: rendercv render failed: {detail}", err=True)
-        raise typer.Exit(code=ExitCode.UNEXPECTED)
+    if errors:
+        for error in errors:
+            typer.echo(f"Error: {error}", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE)
 
 
 @app.command(
     short_help="Convert JSON Resume to RenderCV YAML.",
     help=(
-        "Convert JSON Resume to RenderCV YAML.\n\n"
-        "Input:\n"
-        "- PATH como argumento posicional, o\n"
-        "- -i/--input para ruta explicita, o\n"
-        "- -i - / --input - para leer desde stdin\n\n"
-        "Output:\n"
-        "- por defecto stdout, o\n"
-        "- -o/--output para escribir a fichero, o\n"
-        "- -o - / --output - para forzar stdout\n\n"
+        "Convert input JSON Resume to RenderCV YAML.\n\n"
         "Examples:\n"
         "  profilectl convert examples/resume.example.json\n"
-        "  profilectl convert examples/resume.example.json -o out.yaml\n"
-        "  cat examples/resume.example.json | profilectl convert -i -"
+        "  profilectl convert -i examples/resume.example.json -o output/rendercv_CV.yaml\n"
+        "  cat examples/resume.example.json | profilectl convert"
     )
 )
 def convert(
-    path: Annotated[
+    input: Annotated[
         Path | None,
-        typer.Argument(help="Input JSON Resume file path."),
+        typer.Argument(help="Input file path."),
     ] = None,
     input_option: Annotated[
         str | None,
         typer.Option(
             "--input",
             "-i",
-            help="Input file path, or '-' to read from stdin.",
+            help="Input file path (alternative to positional).",
         ),
     ] = None,
     output_path: Annotated[
@@ -233,45 +256,49 @@ def convert(
         typer.Option(
             "--output",
             "-o",
-            help="Output file path (default: '-'; write to stdout).",
+            help="Output RenderCV YAML file path. Use '-' for stdout.",
         ),
     ] = "-",
-    fmt: Annotated[
-        str,
-        typer.Option(
-            "--format",
-            help="Output format. Supported value: 'rendercv'.",
-        ),
-    ] = "rendercv",
 ) -> None:
-    """Examples:
-
-    - profilectl convert examples/resume.example.json
-    - profilectl convert examples/resume.example.json -o out.yaml
-    - cat examples/resume.example.json | profilectl convert -i -
-    """
-    input_source = _resolve_input_source(path, input_option)
-    _run_convert(input_source=input_source, output_path=output_path, fmt=fmt)
+    input_source = _resolve_input_source(input, input_option, allow_stdin=True)
+    _run_convert(input_source=input_source, output_path=output_path)
 
 
 @app.command(hidden=True)
 def rendercv(
-    input_path: Annotated[Path, typer.Argument(help="Input JSON Resume path.")],
+    input: Annotated[Path, typer.Argument(help="Input file path.")],
     output_path: Annotated[
         str,
         typer.Option("--out", "-o", help="Output path; defaults to stdout."),
     ] = "-",
 ) -> None:
     """Compatibility alias for the convert command."""
-    _run_convert(input_source=str(input_path), output_path=output_path, fmt="rendercv")
+    _run_convert(input_source=str(input), output_path=output_path)
 
 
-@app.command("render-html", short_help="Render HTML from RenderCV YAML.")
+@app.command(
+    "render-html",
+    short_help="Render HTML from RenderCV YAML.",
+    help=(
+        "Render input RenderCV YAML to an HTML file.\n\n"
+        "Examples:\n"
+        "  profilectl render-html output/rendercv_CV.yaml -o output/index.html\n"
+        "  profilectl render-html -i output/rendercv_CV.yaml"
+    ),
+)
 def render_html(
-    input_path: Annotated[
-        Path,
-        typer.Argument(help="Input RenderCV YAML file path."),
-    ],
+    input: Annotated[
+        Path | None,
+        typer.Argument(help="Input file path."),
+    ] = None,
+    input_option: Annotated[
+        str | None,
+        typer.Option(
+            "--input",
+            "-i",
+            help="Input file path (alternative to positional).",
+        ),
+    ] = None,
     output_path: Annotated[
         str,
         typer.Option(
@@ -281,22 +308,35 @@ def render_html(
         ),
     ] = "output/index.html",
 ) -> None:
+    input_source = _resolve_input_source(input, input_option, allow_stdin=False)
     if output_path == "-":
         typer.echo("Error: output path for render-html cannot be stdout ('-').", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
 
-    _run_render_html(input_yaml_path=str(input_path), html_output_path=output_path)
+    _run_render_html(input_yaml_path=input_source, html_output_path=output_path)
 
 
-@app.command(short_help="Validate, convert, and render HTML in one command.")
+@app.command(
+    short_help="Run validate, convert, and render-html.",
+    help=(
+        "Run the full pipeline from input JSON Resume to HTML.\n\n"
+        "Pipeline:\n"
+        "1) validate input JSON Resume\n"
+        "2) convert to RenderCV YAML\n"
+        "3) render HTML from RenderCV YAML\n\n"
+        "Examples:\n"
+        "  profilectl html examples/resume.example.json\n"
+        "  profilectl html -i ../profile-data/data/resume.json -o output/rendercv_CV.yaml --html-output output/index.html"
+    ),
+)
 def html(
-    path: Annotated[
+    input: Annotated[
         Path | None,
-        typer.Argument(help="Input JSON Resume path."),
+        typer.Argument(help="Input file path."),
     ] = None,
     input_path: Annotated[
-        Path | None,
-        typer.Option("--in", help="Input JSON Resume path."),
+        str | None,
+        typer.Option("--input", "-i", help="Input file path (alternative to positional)."),
     ] = None,
     output_path: Annotated[
         str,
@@ -314,12 +354,7 @@ def html(
         ),
     ] = "output/index.html",
 ) -> None:
-    if path is not None and input_path is not None:
-        typer.echo("Error: pass either PATH or --in, not both.", err=True)
-        raise typer.Exit(code=ExitCode.USAGE)
-    if path is None and input_path is None:
-        typer.echo("Error: missing input path; pass PATH or --in.", err=True)
-        raise typer.Exit(code=ExitCode.USAGE)
+    input_source = _resolve_input_source(input, input_path, allow_stdin=False)
     if output_path == "-":
         typer.echo("Error: output path for html cannot be stdout ('-').", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
@@ -327,60 +362,31 @@ def html(
         typer.echo("Error: html output path for html cannot be stdout ('-').", err=True)
         raise typer.Exit(code=ExitCode.USAGE)
 
-    resolved_input_path = path if path is not None else input_path
-    assert resolved_input_path is not None
+    _run_validate(Path(input_source))
 
-    try:
-        errors = validate_jsonresume(resolved_input_path)
-    except json.JSONDecodeError as exc:
-        typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
-        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
-    except OSError as exc:
-        typer.echo(f"Error: I/O error while reading input '{resolved_input_path}': {exc}", err=True)
-        raise typer.Exit(code=ExitCode.IO) from exc
-
-    if errors:
-        for error in errors:
-            typer.echo(f"Error: {error}", err=True)
-        raise typer.Exit(code=ExitCode.JSON_PARSE)
-
-    _run_convert(input_source=str(resolved_input_path), output_path=output_path, fmt="rendercv")
+    _run_convert(input_source=input_source, output_path=output_path)
     _run_render_html(input_yaml_path=output_path, html_output_path=html_output_path)
 
 
-@app.command()
+@app.command(
+    help=(
+        "Validate input JSON Resume against the project schema.\n\n"
+        "Examples:\n"
+        "  profilectl validate examples/resume.example.json\n"
+        "  profilectl validate -i ../profile-data/data/resume.json"
+    )
+)
 def validate(
-    path: Annotated[
+    input: Annotated[
         Path | None,
-        typer.Argument(help="Input JSON Resume path."),
+        typer.Argument(help="Input file path."),
     ] = None,
     input_path: Annotated[
-        Path | None,
-        typer.Option("--in", help="Input JSON Resume path."),
+        str | None,
+        typer.Option("--input", "-i", help="Input file path (alternative to positional)."),
     ] = None,
 ) -> None:
-    if path is not None and input_path is not None:
-        typer.echo("Error: pass either PATH or --in, not both.", err=True)
-        raise typer.Exit(code=ExitCode.USAGE)
-    if path is None and input_path is None:
-        typer.echo("Error: missing input path; pass PATH or --in.", err=True)
-        raise typer.Exit(code=ExitCode.USAGE)
-
-    resolved_input_path = path if path is not None else input_path
-    assert resolved_input_path is not None
-
-    try:
-        errors = validate_jsonresume(resolved_input_path)
-    except json.JSONDecodeError as exc:
-        typer.echo(f"Error: input must be valid JSON ({exc.msg}).", err=True)
-        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
-    except OSError as exc:
-        typer.echo(f"Error: I/O error while reading input '{resolved_input_path}': {exc}", err=True)
-        raise typer.Exit(code=ExitCode.IO) from exc
-
-    if errors:
-        for error in errors:
-            typer.echo(f"Error: {error}", err=True)
-        raise typer.Exit(code=ExitCode.JSON_PARSE)
+    input_source = _resolve_input_source(input, input_path, allow_stdin=False)
+    _run_validate(Path(input_source))
 
     typer.echo("OK")

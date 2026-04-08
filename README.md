@@ -42,8 +42,36 @@ La mayoría de herramientas de CV optimizan la presentación. Este proyecto prio
 
 - `validate`: valida JSON Resume con salida de error consistente
 - `convert`: transforma JSON Resume a RenderCV YAML
+- `render-html`: transforma RenderCV YAML a HTML publicable
+- `html`: ejecuta el pipeline completo (validate -> convert -> render-html)
 - entrada por archivo o `stdin`; salida por `stdout` o fichero
 - ejecución estable en local, scripts y CI
+
+## CLI
+
+| Comando | Input | Output |
+|---|---|---|
+| `profilectl validate` | Input JSON Resume file | `stdout` (`OK`) y exit code |
+| `profilectl convert` | Input JSON Resume file | RenderCV YAML (`stdout` o `-o`) |
+| `profilectl render-html` | Input RenderCV YAML file | Output HTML file (`-o`) |
+| `profilectl html` | Input JSON Resume file | YAML intermedio (`-o`) + HTML final (`--html-output`) |
+
+Flujo recomendado:
+
+```bash
+profilectl validate -i examples/resume.example.json
+profilectl convert -i examples/resume.example.json -o output/rendercv_CV.yaml
+profilectl render-html -i output/rendercv_CV.yaml -o output/index.html
+```
+
+Pipeline en un comando:
+
+```bash
+profilectl html -i examples/resume.example.json -o output/rendercv_CV.yaml --html-output output/index.html
+```
+
+Nota: `profilectl` no expone flags de tema/idioma (`--theme`, `--locale`).
+La personalizacion visual y de locale se realiza editando el YAML RenderCV (`design`, `locale`).
 
 ## Alcance
 
@@ -124,7 +152,13 @@ make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HT
 Comando equivalente directo con `profilectl`:
 
 ```bash
-profilectl html --in "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
+profilectl html --input "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
+```
+
+También puedes usar el argumento posicional:
+
+```bash
+profilectl html ../profile-data/data/resume.json --output output/rendercv_CV.yaml --html-output output/index.html
 ```
 
 ### Convertir desde stdin
@@ -175,5 +209,6 @@ También es posible trabajar en local mediante un entorno virtual (`.venv`).
 ## Documentación relacionada
 
 - `docs/architecture.md`
+- `docs/cli.md`
 - `docs/workflows/golden-path.md`
 - `docs/decisions/`

@@ -28,7 +28,7 @@ pip install .[dev]
 Con instalacion editable (recomendado):
 
 ```bash
-profilectl validate --in examples/resume.example.json
+profilectl validate --input examples/resume.example.json
 profilectl convert examples/resume.example.json -o out.yaml
 rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --dont-generate-png --dont-generate-typst
 ```
@@ -36,14 +36,14 @@ rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --don
 Sin instalacion editable (alternativa):
 
 ```bash
-PYTHONPATH=src python -m profilecli validate --in examples/resume.example.json
+PYTHONPATH=src python -m profilecli validate --input examples/resume.example.json
 PYTHONPATH=src python -m profilecli convert examples/resume.example.json -o out.yaml
 rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --dont-generate-png --dont-generate-typst
 ```
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m profilecli validate --in examples/resume.example.json
+python -m profilecli validate --input examples/resume.example.json
 python -m profilecli convert examples/resume.example.json -o out.yaml
 rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --dont-generate-png --dont-generate-typst
 ```
@@ -51,7 +51,7 @@ rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --don
 ## Flujo local rapido
 
 ```bash
-PYTHONPATH=src python -m profilecli validate --in examples/resume.example.json
+PYTHONPATH=src python -m profilecli validate --input examples/resume.example.json
 PYTHONPATH=src python -m profilecli convert examples/resume.example.json -o out.yaml
 rendercv render out.yaml --html-path output/index.html --dont-generate-pdf --dont-generate-png --dont-generate-typst
 pytest
@@ -64,7 +64,7 @@ make html IN="../profile-data/data/resume.json" OUT="output/rendercv_CV.yaml" HT
 ```
 
 ```bash
-profilectl html --in "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
+profilectl html --input "../profile-data/data/resume.json" --output "output/rendercv_CV.yaml" --html-output "output/index.html"
 ```
 
 ## Notas

@@ -5,7 +5,7 @@ OUT ?= output/rendercv_CV.yaml
 HTML_OUT ?= output/index.html
 
 validate:
-	profilectl validate --in "$(IN)"
+	profilectl validate --input "$(IN)"
 
 convert:
 	profilectl convert --input "$(IN)" --output "$(OUT)"
