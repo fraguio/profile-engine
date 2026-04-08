@@ -1,0 +1,78 @@
+name: Publish CV to GitHub Pages
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile_data_ref:
+        description: "Branch, tag, or commit SHA to checkout from profile-data"
+        required: true
+        default: "main"
+      profile_data_path:
+        description: "Path to resume JSON inside profile-data"
+        required: true
+        default: "data/resume.json"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout profile-engine
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install profilectl and RenderCV
+        run: pip install . "rendercv>=2.8,<2.9"
+
+      - name: Checkout profile-data
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/profile-data
+          ref: ${{ inputs.profile_data_ref }}
+          path: external/profile-data
+          token: ${{ secrets.PROFILE_DATA_REPO_TOKEN }}
+
+      - name: Generate RenderCV YAML and HTML
+        run: >-
+          profilectl html
+          --input external/profile-data/${{ inputs.profile_data_path }}
+          --output output/rendercv_CV.yaml
+          --html-output output/index.html
+
+      - name: Verify output exists
+        run: |
+          test -f output/index.html
+
+      - name: List output
+        run: ls -R output
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: output
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

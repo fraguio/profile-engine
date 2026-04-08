@@ -9,6 +9,7 @@ El flujo operativo de `profile-engine` es lineal y determinista:
 3. Transformación a estructura RenderCV.
 4. Emisión de YAML por `stdout` o fichero.
 5. Render de HTML publicable con RenderCV.
+6. Publicacion del HTML con workflow de GitHub Pages (ver `docs/runbooks/github-pages.md`).
 
 La ruta principal es `convert`; `validate` permite validar de forma aislada cuando se necesita cortar antes del mapeo.
 

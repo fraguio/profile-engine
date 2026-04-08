@@ -17,7 +17,7 @@ Flujo típico:
 1. Almacenar `resume.json` en un repositorio privado
 2. Validar estructura y contenido con `profilectl validate`
 3. Convertir al formato de salida (RenderCV) con `profilectl convert`
-4. Publicar el CV generado en un sitio estático (por ejemplo, GitHub Pages)
+4. Publicar el CV generado mediante un workflow de CI/CD (por ejemplo, GitHub Pages)
 
 Este enfoque garantiza consistencia, trazabilidad y control total sobre el proceso de generación del CV.
 
@@ -211,4 +211,5 @@ También es posible trabajar en local mediante un entorno virtual (`.venv`).
 - `docs/architecture.md`
 - `docs/cli.md`
 - `docs/workflows/golden-path.md`
+- `docs/runbooks/github-pages.md`
 - `docs/decisions/`
