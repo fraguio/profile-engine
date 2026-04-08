@@ -22,8 +22,9 @@ def _format_json_path(path_parts: list[object]) -> str:
 
 
 def validate_jsonresume(input_path: Path) -> list[str]:
-    project_root = Path(__file__).resolve().parents[2]
-    schema_path = project_root / "schemas" / "jsonresume.schema.json"
+    schema_path = Path.cwd() / "schemas" / "jsonresume.schema.json"
+    if not schema_path.exists():
+        raise FileNotFoundError(f"JSON Resume schema not found at expected path: '{schema_path}'")
 
     with schema_path.open("r", encoding="utf-8") as schema_file:
         schema = json.load(schema_file)
