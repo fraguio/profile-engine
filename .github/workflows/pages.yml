@@ -53,8 +53,8 @@ jobs:
 
       - name: Generate RenderCV YAML and HTML
         run: >-
-          profilectl html
-          --input external/profile-data/${{ inputs.profile_data_path }}
+          profilectl html      
+          --input external/profile-data/${{ inputs.profile_data_path || 'data/resume.json' }}
           --output output/rendercv_CV.yaml
           --html-output output/index.html
 
