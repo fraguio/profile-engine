@@ -1,6 +1,10 @@
 name: Publish CV to GitHub Pages
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
     inputs:
       profile_data_ref:
@@ -11,6 +15,9 @@ on:
         description: "Path to resume JSON inside profile-data"
         required: true
         default: "data/resume.json"
+
+  repository_dispatch:
+    types: [profile-data-updated]
 
 permissions:
   contents: read
