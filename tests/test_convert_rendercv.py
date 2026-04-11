@@ -15,6 +15,9 @@ def _sample_payload() -> dict:
         "basics": {
             "name": "Jane Doe",
             "label": "Backend Engineer",
+            "email": "jane.doe@example.com",
+            "phone": "+34111222333",
+            "url": "https://janedoe.dev",
             "summary": "First paragraph.\n\nSecond paragraph.",
             "location": {"city": "A Coruna", "region": "Galicia", "countryCode": "ES"},
         },
@@ -55,6 +58,26 @@ def test_convert_sets_cv_name_and_design_theme() -> None:
     assert result["cv"]["name"] == "Jane Doe"
     assert result["design"]["theme"] == "profileengine01classic"
     assert result["locale"]["language"] == "spanish"
+
+
+def test_basics_contact_fields_map_to_rendercv_cv() -> None:
+    result = convert_jsonresume_to_rendercv(_sample_payload())
+    assert result["cv"]["email"] == "jane.doe@example.com"
+    assert result["cv"]["phone"] == "+34111222333"
+    assert result["cv"]["website"] == "https://janedoe.dev"
+
+
+def test_basics_contact_fields_skip_blank_values() -> None:
+    payload = _sample_payload()
+    payload["basics"]["email"] = "   "
+    payload["basics"]["phone"] = ""
+    payload["basics"]["url"] = "  "
+
+    result = convert_jsonresume_to_rendercv(payload)
+
+    assert "email" not in result["cv"]
+    assert "phone" not in result["cv"]
+    assert "website" not in result["cv"]
 
 
 def test_experience_count_matches_work_length() -> None:

@@ -83,6 +83,18 @@ def build_cv_section(basics: dict[str, Any]) -> dict[str, Any]:
     if location:
         cv["location"] = location
 
+    email = basics.get("email")
+    if isinstance(email, str) and email.strip():
+        cv["email"] = email.strip()
+
+    phone = basics.get("phone")
+    if isinstance(phone, str) and phone.strip():
+        cv["phone"] = phone.strip()
+
+    website = basics.get("url")
+    if isinstance(website, str) and website.strip():
+        cv["website"] = website.strip()
+
     paragraphs = _split_paragraphs(basics.get("summary"))
     if paragraphs:
         cv["sections"] = {"Summary": paragraphs}
