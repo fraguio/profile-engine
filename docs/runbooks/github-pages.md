@@ -24,11 +24,19 @@ Archivo: `.github/workflows/pages.yml`.
 Disparador:
 
 - `workflow_dispatch` (manual desde la pestaña Actions).
+- `repository_dispatch` con tipo `profile-data-updated`.
 
 Inputs disponibles:
 
 - `profile_data_ref` (default: `main`): branch, tag o commit SHA de `profile-data`.
 - `profile_data_path` (default: `data/resume.json`): ruta del JSON dentro de `profile-data`.
+
+Para `repository_dispatch`, se leen estos campos opcionales en `client_payload`:
+
+- `profile_data_ref`
+- `profile_data_path`
+
+Si no llegan en el payload, se usan los defaults (`main` y `data/resume.json`).
 
 Pasos que ejecuta:
 
@@ -43,6 +51,13 @@ profilectl html \
   --output output/rendercv_CV.yaml \
   --html-output output/index.html
 ```
+
+`profilectl` sincroniza automaticamente los overrides versionados de `src/profilecli/templates/`
+junto al YAML generado para que RenderCV aplique:
+
+- theme custom `profileengine01classic` (Typst/PDF/PNG)
+- i18n de literales en Markdown/HTML
+- estilos HTML alineados con los colores del theme
 
 5. Subida del artefacto Pages desde `output/`.
 6. Deploy con `actions/deploy-pages`.

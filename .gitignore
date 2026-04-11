@@ -23,6 +23,7 @@ venv/
 *.log
 *.pdf
 *.html
+!src/profilecli/templates/**/*.html
 out.yaml
 rendercv.yaml
 output/

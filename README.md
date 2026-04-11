@@ -72,6 +72,9 @@ profilectl html -i examples/resume.example.json -o output/rendercv_CV.yaml --htm
 
 Nota: `profilectl` no expone flags de tema/idioma (`--theme`, `--locale`).
 La personalizacion visual y de locale se realiza editando el YAML RenderCV (`design`, `locale`).
+Por defecto, `convert` genera `design.theme: profileengine01classic` y `locale.language: spanish`.
+Al generar YAML o HTML, `profilectl` sincroniza automaticamente los overrides versionados de
+`src/profilecli/templates/` junto al YAML de entrada para que RenderCV los aplique en todos los formatos.
 
 ## Alcance
 

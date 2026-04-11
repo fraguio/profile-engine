@@ -15,7 +15,6 @@ on:
         description: "Path to resume JSON inside profile-data"
         required: true
         default: "data/resume.json"
-
   repository_dispatch:
     types: [profile-data-updated]
 
@@ -31,6 +30,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PROFILE_DATA_REF: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.profile_data_ref || inputs.profile_data_ref || 'main' }}
+      PROFILE_DATA_PATH: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.profile_data_path || inputs.profile_data_path || 'data/resume.json' }}
     steps:
       - name: Checkout profile-engine
         uses: actions/checkout@v4
@@ -47,14 +49,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/profile-data
-          ref: ${{ inputs.profile_data_ref }}
+          ref: ${{ env.PROFILE_DATA_REF }}
           path: external/profile-data
           token: ${{ secrets.PROFILE_DATA_REPO_TOKEN }}
 
       - name: Generate RenderCV YAML and HTML
         run: >-
-          profilectl html      
-          --input external/profile-data/${{ inputs.profile_data_path || 'data/resume.json' }}
+          profilectl html
+          --input external/profile-data/${{ env.PROFILE_DATA_PATH }}
           --output output/rendercv_CV.yaml
           --html-output output/index.html
 

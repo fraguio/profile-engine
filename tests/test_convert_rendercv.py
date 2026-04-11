@@ -53,7 +53,8 @@ def _sample_payload() -> dict:
 def test_convert_sets_cv_name_and_design_theme() -> None:
     result = convert_jsonresume_to_rendercv(_sample_payload())
     assert result["cv"]["name"] == "Jane Doe"
-    assert result["design"]["theme"] == "classic"
+    assert result["design"]["theme"] == "profileengine01classic"
+    assert result["locale"]["language"] == "spanish"
 
 
 def test_experience_count_matches_work_length() -> None:
@@ -100,9 +101,10 @@ def test_date_normalization_cases() -> None:
 
 def test_required_top_level_keys_present_when_empty() -> None:
     result = convert_jsonresume_to_rendercv({})
-    assert set(result.keys()) == {"cv", "design"}
+    assert set(result.keys()) == {"cv", "design", "locale"}
     assert result["cv"] == {}
-    assert result["design"] == {"theme": "classic"}
+    assert result["design"] == {"theme": "profileengine01classic"}
+    assert result["locale"] == {"language": "spanish"}
 
 
 def test_cli_rendercv_stdout_contains_schema_header(tmp_path) -> None:

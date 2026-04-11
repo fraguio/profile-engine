@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from enum import IntEnum
@@ -12,6 +13,9 @@ import typer
 
 from profilecli.convert_rendercv import convert_jsonresume_to_rendercv, dump_rendercv_yaml
 from profilecli.validate import validate_jsonresume
+
+
+THEME_NAME = "profileengine01classic"
 
 
 class ExitCode(IntEnum):
@@ -133,11 +137,49 @@ def _write_output(output: str, output_path: str) -> None:
         raise typer.Exit(code=ExitCode.IO) from exc
 
 
+def _sync_rendercv_template_overrides(target_directory: Path) -> None:
+    source_root = Path(__file__).resolve().parent / "templates" / THEME_NAME
+    if not source_root.exists():
+        return
+
+    try:
+        target_directory.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(
+            source_root,
+            target_directory / THEME_NAME,
+            dirs_exist_ok=True,
+        )
+
+        markdown_source = source_root / "markdown"
+        if markdown_source.exists():
+            shutil.copytree(
+                markdown_source,
+                target_directory / "markdown",
+                dirs_exist_ok=True,
+            )
+
+        html_source = source_root / "html"
+        if html_source.exists():
+            shutil.copytree(
+                html_source,
+                target_directory / "html",
+                dirs_exist_ok=True,
+            )
+    except OSError as exc:
+        typer.echo(
+            f"Error: I/O error while preparing RenderCV template overrides in '{target_directory}': {exc}",
+            err=True,
+        )
+        raise typer.Exit(code=ExitCode.IO) from exc
+
+
 def _run_convert(input_source: str, output_path: str) -> None:
     try:
         payload = _load_payload(input_source)
         yaml_output = dump_rendercv_yaml(convert_jsonresume_to_rendercv(payload))
         _write_output(yaml_output, output_path)
+        if output_path != "-":
+            _sync_rendercv_template_overrides(Path(output_path).resolve().parent)
     except typer.Exit:
         raise
     except Exception as exc:
@@ -165,6 +207,8 @@ def _run_render_html(input_yaml_path: str, html_output_path: str) -> None:
     output_html = Path(html_output_path)
     output_html.parent.mkdir(parents=True, exist_ok=True)
     markdown_tmp = output_html.with_suffix(f"{output_html.suffix}.md.tmp")
+
+    _sync_rendercv_template_overrides(input_yaml.resolve().parent)
 
     command = [
         "rendercv",
