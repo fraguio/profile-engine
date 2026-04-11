@@ -16,10 +16,6 @@ on:
         required: true
         default: "data/resume.json"
   repository_dispatch:
-    types:
-      - profile-data-updated
-
-  repository_dispatch:
     types: [profile-data-updated]
 
 permissions:
