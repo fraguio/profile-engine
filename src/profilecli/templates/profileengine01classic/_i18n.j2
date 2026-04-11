@@ -1,0 +1,85 @@
+{% macro section_title_i18n(section_title, locale) -%}
+{%- set i18n = {
+    "en": {
+      "summary": "Summary",
+      "experience": "Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "projects": "Projects",
+      "publications": "Publications",
+      "certifications": "Certifications",
+      "languages": "Languages",
+      "location": "Location"
+    },
+    "es": {
+      "summary": "Resumen",
+      "experience": "Experiencia",
+      "education": "Educación",
+      "skills": "Habilidades",
+      "projects": "Proyectos",
+      "publications": "Publicaciones",
+      "certifications": "Certificaciones",
+      "languages": "Idiomas",
+      "location": "Ubicación"
+    }
+  }
+-%}
+{%- set language_aliases = {
+    "english": "en",
+    "en": "en",
+    "spanish": "es",
+    "es": "es"
+  }
+-%}
+{%- set raw_language = locale.language | default("es") | lower -%}
+{%- set language = language_aliases.get(raw_language, "es") -%}
+{%- set labels = i18n.get(language, i18n["es"]) -%}
+{%- set normalized_title = section_title | string | lower | replace(" ", "_") -%}
+{{- labels.get(normalized_title, section_title) -}}
+{%- endmacro %}
+
+{% macro header_label_i18n(label_key, locale) -%}
+{%- set i18n = {
+    "en": {
+      "phone": "Phone",
+      "email": "Email",
+      "location": "Location",
+      "website": "Website"
+    },
+    "es": {
+      "phone": "Teléfono",
+      "email": "Correo",
+      "location": "Ubicación",
+      "website": "Sitio web"
+    }
+  }
+-%}
+{%- set language_aliases = {
+    "english": "en",
+    "en": "en",
+    "spanish": "es",
+    "es": "es"
+  }
+-%}
+{%- set raw_language = locale.language | default("es") | lower -%}
+{%- set language = language_aliases.get(raw_language, "es") -%}
+{%- set labels = i18n.get(language, i18n["es"]) -%}
+{{- labels.get(label_key, label_key) -}}
+{%- endmacro %}
+
+{% macro cv_title_i18n(name, locale) -%}
+{%- set language_aliases = {
+    "english": "en",
+    "en": "en",
+    "spanish": "es",
+    "es": "es"
+  }
+-%}
+{%- set raw_language = locale.language | default("es") | lower -%}
+{%- set language = language_aliases.get(raw_language, "es") -%}
+{%- if language == "en" -%}
+{{- name ~ "'s CV" -}}
+{%- else -%}
+{{- "CV de " ~ name -}}
+{%- endif -%}
+{%- endmacro %}

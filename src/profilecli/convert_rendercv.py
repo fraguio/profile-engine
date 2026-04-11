@@ -295,13 +295,16 @@ def convert_jsonresume_to_rendercv(payload: dict[str, Any]) -> dict[str, Any]:
 
     doc: dict[str, Any] = {
         "cv": cv,
-        "design": {"theme": "classic"},
+        "design": {"theme": "profileengine01classic"},
+        "locale": {"language": "spanish"},
     }
 
     if not isinstance(doc.get("cv"), dict):
         doc["cv"] = {}
     if not isinstance(doc.get("design"), dict):
-        doc["design"] = {"theme": "classic"}
+        doc["design"] = {"theme": "profileengine01classic"}
+    if not isinstance(doc.get("locale"), dict):
+        doc["locale"] = {"language": "spanish"}
 
     return doc
 

@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from profilecli.cli import ExitCode, _resolve_input_source, app
+from profilecli.cli import ExitCode, _resolve_input_source, _run_convert, app
 
 
 runner = CliRunner()
@@ -241,3 +241,33 @@ def test_render_html_accepts_input_option(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr("subprocess.run", fake_run)
     result = runner.invoke(app, ["render-html", "--input", str(input_yaml)])
     assert result.exit_code == 0
+
+
+def test_convert_writes_template_overrides_next_to_output(tmp_path) -> None:
+    resume_path = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
+    output_yaml = tmp_path / "generated" / "rendercv.yaml"
+
+    _run_convert(input_source=str(resume_path), output_path=str(output_yaml))
+
+    assert output_yaml.exists()
+    assert (output_yaml.parent / "profileengine01classic" / "SectionBeginning.j2.typ").exists()
+    assert (output_yaml.parent / "markdown" / "Header.j2.md").exists()
+    assert (output_yaml.parent / "html" / "Full.html").exists()
+
+
+def test_render_html_prepares_template_overrides_in_input_directory(monkeypatch, tmp_path) -> None:
+    input_yaml = tmp_path / "rendercv.yaml"
+    input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
+    output_html = tmp_path / "site" / "index.html"
+
+    def fake_run(command: list[str], capture_output: bool, text: bool, check: bool) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+
+    result = runner.invoke(app, ["render-html", str(input_yaml), "--output", str(output_html)])
+
+    assert result.exit_code == 0
+    assert (input_yaml.parent / "profileengine01classic" / "SectionBeginning.j2.typ").exists()
+    assert (input_yaml.parent / "markdown" / "Header.j2.md").exists()
+    assert (input_yaml.parent / "html" / "Full.html").exists()
