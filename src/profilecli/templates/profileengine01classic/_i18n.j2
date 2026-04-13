@@ -68,18 +68,5 @@
 {%- endmacro %}
 
 {% macro cv_title_i18n(name, locale) -%}
-{%- set language_aliases = {
-    "english": "en",
-    "en": "en",
-    "spanish": "es",
-    "es": "es"
-  }
--%}
-{%- set raw_language = locale.language | default("es") | lower -%}
-{%- set language = language_aliases.get(raw_language, "es") -%}
-{%- if language == "en" -%}
-{{- name ~ "'s CV" -}}
-{%- else -%}
-{{- "CV de " ~ name -}}
-{%- endif -%}
+{{- name -}}
 {%- endmacro %}
