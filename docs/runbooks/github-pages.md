@@ -21,6 +21,15 @@ Publicar un CV HTML generado por `profilectl` en GitHub Pages usando este reposi
 
 Archivo: `.github/workflows/pages.yml`.
 
+Runtime y versiones relevantes:
+
+- Se fuerza runtime Node 24 para acciones JavaScript con `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"`.
+- Acciones usadas actualmente:
+  - `actions/checkout@v6`
+  - `actions/setup-python@v6`
+  - `actions/upload-pages-artifact@v5.0.0`
+  - `actions/deploy-pages@v5.0.0`
+
 Disparador:
 
 - `workflow_dispatch` (manual desde la pestaña Actions).
@@ -74,3 +83,4 @@ junto al YAML generado para que RenderCV aplique:
 
 - Este flujo no agrega un comando `profilectl publish`; la publicacion se mantiene en CI/CD.
 - El despliegue objetivo final en `profile-site` puede agregarse despues como flujo separado.
+- Se usa `actions/upload-pages-artifact@v5.0.0` (tag exacto) para evitar errores de resolucion con `@v5`.
