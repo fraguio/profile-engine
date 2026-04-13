@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from tests.subprocess_cli import run_profilecli_subprocess
@@ -16,7 +18,7 @@ def _sample_payload() -> dict:
             "name": "Jane Doe",
             "label": "Backend Engineer",
             "email": "jane.doe@example.com",
-            "phone": "+34111222333",
+            "phone": "+34615822869",
             "url": "https://janedoe.dev",
             "summary": "First paragraph.\n\nSecond paragraph.",
             "location": {"city": "A Coruna", "region": "Galicia", "countryCode": "ES"},
@@ -63,7 +65,7 @@ def test_convert_sets_cv_name_and_design_theme() -> None:
 def test_basics_contact_fields_map_to_rendercv_cv() -> None:
     result = convert_jsonresume_to_rendercv(_sample_payload())
     assert result["cv"]["email"] == "jane.doe@example.com"
-    assert result["cv"]["phone"] == "+34111222333"
+    assert result["cv"]["phone"] == "+34615822869"
     assert result["cv"]["website"] == "https://janedoe.dev"
 
 
@@ -78,6 +80,22 @@ def test_basics_contact_fields_skip_blank_values() -> None:
     assert "email" not in result["cv"]
     assert "phone" not in result["cv"]
     assert "website" not in result["cv"]
+
+
+def test_convert_raises_on_local_phone_without_country_code() -> None:
+    payload = _sample_payload()
+    payload["basics"]["phone"] = "615822869"
+
+    with pytest.raises(ValueError, match="basics.phone"):
+        convert_jsonresume_to_rendercv(payload)
+
+
+def test_convert_raises_on_invalid_e164_phone() -> None:
+    payload = _sample_payload()
+    payload["basics"]["phone"] = "+34123456789"
+
+    with pytest.raises(ValueError, match="basics.phone"):
+        convert_jsonresume_to_rendercv(payload)
 
 
 def test_experience_count_matches_work_length() -> None:

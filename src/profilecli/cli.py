@@ -182,6 +182,9 @@ def _run_convert(input_source: str, output_path: str) -> None:
             _sync_rendercv_template_overrides(Path(output_path).resolve().parent)
     except typer.Exit:
         raise
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=ExitCode.JSON_PARSE) from exc
     except Exception as exc:
         typer.echo(f"Error: unexpected error: {exc}", err=True)
         raise typer.Exit(code=ExitCode.UNEXPECTED) from exc

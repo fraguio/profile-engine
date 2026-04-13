@@ -5,12 +5,41 @@ import re
 from pathlib import Path
 from typing import Any
 
+import phonenumbers
 import yaml
 
 SCHEMA_HEADER = (
     "# yaml-language-server: "
     "$schema=https://raw.githubusercontent.com/rendercv/rendercv/refs/tags/v2.8/schema.json"
 )
+
+
+def normalize_phone(value: object) -> str | None:
+    if value is None:
+        return None
+
+    if not isinstance(value, str):
+        raise ValueError("basics.phone must be a string in E.164 format (for example, +34615822869).")
+
+    raw = value.strip()
+    if not raw:
+        return None
+
+    try:
+        parsed = phonenumbers.parse(raw, None)
+    except phonenumbers.NumberParseException as exc:
+        raise ValueError(
+            "basics.phone must be a valid international phone number in E.164 format "
+            "(for example, +34615822869)."
+        ) from exc
+
+    if not phonenumbers.is_possible_number(parsed) or not phonenumbers.is_valid_number(parsed):
+        raise ValueError(
+            "basics.phone must be a real, valid international phone number in E.164 "
+            "format (for example, +34615822869)."
+        )
+
+    return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 
 
 def load_jsonresume(input_path: Path) -> dict[str, Any]:
@@ -87,9 +116,9 @@ def build_cv_section(basics: dict[str, Any]) -> dict[str, Any]:
     if isinstance(email, str) and email.strip():
         cv["email"] = email.strip()
 
-    phone = basics.get("phone")
-    if isinstance(phone, str) and phone.strip():
-        cv["phone"] = phone.strip()
+    phone = normalize_phone(basics.get("phone"))
+    if phone:
+        cv["phone"] = phone
 
     website = basics.get("url")
     if isinstance(website, str) and website.strip():
