@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -80,6 +81,26 @@ def test_convert_json_root_must_be_object() -> None:
     result = runner.invoke(app, ["convert", "-i", "-", "-o", "-"], input="[]")
     assert result.exit_code == 3
     assert "Error: JSON root must be an object" in result.output
+
+
+def test_convert_invalid_basics_phone_returns_parse_error(tmp_path) -> None:
+    input_file = tmp_path / "resume.json"
+    input_file.write_text(
+        json.dumps(
+            {
+                "basics": {
+                    "name": "Jane Doe",
+                    "phone": "+34123456789",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["convert", str(input_file), "-o", "-"])
+
+    assert result.exit_code == 3
+    assert "basics.phone" in result.output
 
 
 def test_render_html_missing_input_returns_io_error() -> None:
