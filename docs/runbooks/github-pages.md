@@ -24,11 +24,11 @@ Archivo: `.github/workflows/pages.yml`.
 Runtime y versiones relevantes:
 
 - Se fuerza runtime Node 24 para acciones JavaScript con `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"`.
-- Acciones usadas actualmente:
-  - `actions/checkout@v6`
-  - `actions/setup-python@v6`
-  - `actions/upload-pages-artifact@v5.0.0`
-  - `actions/deploy-pages@v5.0.0`
+- Las acciones del workflow estan pinneadas por commit SHA (inmutables):
+  - `actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd` (`v6.0.2`)
+  - `actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405` (`v6.2.0`)
+  - `actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9` (`v5.0.0`)
+  - `actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128` (`v5.0.0`)
 
 Disparador:
 
@@ -83,4 +83,5 @@ junto al YAML generado para que RenderCV aplique:
 
 - Este flujo no agrega un comando `profilectl publish`; la publicacion se mantiene en CI/CD.
 - El despliegue objetivo final en `profile-site` puede agregarse despues como flujo separado.
-- Se usa `actions/upload-pages-artifact@v5.0.0` (tag exacto) para evitar errores de resolucion con `@v5`.
+- Se usa `actions/upload-pages-artifact@v5.0.0` (referenciado por SHA) para evitar errores de resolucion con `@v5`.
+- Para actualizar versiones de actions, resolver primero el tag deseado y luego actualizar su SHA en el workflow.
