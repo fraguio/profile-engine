@@ -6,6 +6,8 @@
 
 `profile-engine` es un pipeline backend determinista diseñado para validar y transformar datos de perfil estructurados de forma predecible y automatizable.
 
+Como consumer independiente de JSON Resume, no conoce ni depende de otros consumers del mismo dominio.
+
 La interfaz pública del pipeline es `profilectl`: valida contratos JSON Resume y genera YAML compatible con RenderCV mediante `convert`, priorizando consistencia, trazabilidad y facilidad de integración en pipelines.
 
 ## Caso de uso
@@ -79,6 +81,8 @@ Al generar YAML o HTML, `profilectl` sincroniza automaticamente los overrides ve
 ## Alcance
 
 Resuelve un problema acotado: convertir de forma confiable un contrato JSON conocido a un formato de salida concreto.
+
+El contrato de datos es la frontera del sistema y permite integrar `profilectl` con cualquier proveedor de JSON Resume válido.
 
 No intenta cubrir, por ahora, edición visual, múltiples targets de exportación, versionado de perfiles ni orquestación distribuida.
 

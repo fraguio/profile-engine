@@ -82,6 +82,6 @@ junto al YAML generado para que RenderCV aplique:
 ## Notas
 
 - Este flujo no agrega un comando `profilectl publish`; la publicacion se mantiene en CI/CD.
-- El despliegue objetivo final en `profile-site` puede agregarse despues como flujo separado.
+- Otros consumers pueden agregar sus propios flujos de despliegue de forma separada.
 - Se usa `actions/upload-pages-artifact@v5.0.0` (referenciado por SHA) para evitar errores de resolucion con `@v5`.
 - Para actualizar versiones de actions, resolver primero el tag deseado y luego actualizar su SHA en el workflow.
