@@ -38,10 +38,10 @@ jobs:
       PROFILE_DATA_PATH: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.profile_data_path || inputs.profile_data_path || 'data/resume.json' }}
     steps:
       - name: Checkout profile-engine
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -49,7 +49,7 @@ jobs:
         run: pip install . "rendercv[full]>=2.8,<2.9"
 
       - name: Checkout profile-data
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/profile-data
           ref: ${{ env.PROFILE_DATA_REF }}
@@ -71,7 +71,7 @@ jobs:
         run: ls -R output
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: output
 
@@ -87,4 +87,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
