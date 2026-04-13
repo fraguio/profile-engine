@@ -16,6 +16,8 @@ Flujo único y explícito:
 
 El sistema asume entrada estructurada, valida temprano y transforma solo datos válidos. La CLI no contiene lógica de mapeo; coordina lectura/escritura, códigos de salida y manejo de errores.
 
+`profile-engine` se define como consumer del contrato JSON Resume y no establece dependencias con otros consumers.
+
 ## Componentes
 
 - Capa de interfaz (CLI): `src/profilecli/cli.py`
