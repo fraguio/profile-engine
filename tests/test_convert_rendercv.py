@@ -86,7 +86,7 @@ def test_convert_raises_on_local_phone_without_country_code() -> None:
     payload = _sample_payload()
     payload["basics"]["phone"] = "615822869"
 
-    with pytest.raises(ValueError, match="basics.phone"):
+    with pytest.raises(ValueError, match=r"basics\.phone='6158\.\.\.69'"):
         convert_jsonresume_to_rendercv(payload)
 
 
@@ -94,7 +94,7 @@ def test_convert_raises_on_invalid_e164_phone() -> None:
     payload = _sample_payload()
     payload["basics"]["phone"] = "+34123456789"
 
-    with pytest.raises(ValueError, match="basics.phone"):
+    with pytest.raises(ValueError, match=r"basics\.phone='\+341\.\.\.89'"):
         convert_jsonresume_to_rendercv(payload)
 
 

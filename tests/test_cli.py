@@ -101,6 +101,7 @@ def test_convert_invalid_basics_phone_returns_parse_error(tmp_path) -> None:
 
     assert result.exit_code == 3
     assert "basics.phone" in result.output
+    assert "+341...89" in result.output
 
 
 def test_render_html_missing_input_returns_io_error() -> None:
@@ -345,4 +346,5 @@ def test_html_invalid_phone_fails_before_render_step(monkeypatch, tmp_path) -> N
 
     assert result.exit_code == 3
     assert "basics.phone" in result.output
+    assert "+341...89" in result.output
     assert called["render_html"] is False

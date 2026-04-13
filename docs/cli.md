@@ -73,3 +73,16 @@ profilectl html -i examples/resume.example.json -o output/rendercv_CV.yaml --htm
 - The generated YAML is aligned with RenderCV schema `v2.8`.
 - `profilectl` intentionally does not expose `--theme` or `--locale` flags.
 - RenderCV design and locale are customizable only in YAML through `design` and `locale`.
+
+## Phone Validation Scope
+
+- `profilectl validate` checks JSON Resume schema rules only.
+- JSON Resume allows `basics.phone` as a free-form string, so `validate` can pass local formats.
+- `profilectl convert` and `profilectl html` apply strict phone validation for `basics.phone`.
+- `basics.phone` must be a real international number in E.164 format.
+
+## Troubleshooting Phone Errors
+
+- If the error includes a masked value like `+341...89`, it refers to the phone that failed validation.
+- Add country code and use E.164 format (`+` plus digits, no local-only numbers).
+- If the number is synthetic/test-like, replace it with a real valid number for rendering.

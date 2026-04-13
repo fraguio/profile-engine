@@ -14,12 +14,24 @@ SCHEMA_HEADER = (
 )
 
 
+def _mask_phone_for_error(value: str) -> str:
+    compact = re.sub(r"\s+", "", value)
+    if not compact:
+        return "***"
+    if len(compact) <= 4:
+        return compact[0] + "***"
+    return f"{compact[:4]}...{compact[-2:]}"
+
+
 def normalize_phone(value: object) -> str | None:
     if value is None:
         return None
 
     if not isinstance(value, str):
-        raise ValueError("basics.phone must be a string in E.164 format (for example, +34615822869).")
+        raise ValueError(
+            "basics.phone must be a string in E.164 format "
+            "(for example, +34615822869)."
+        )
 
     raw = value.strip()
     if not raw:
@@ -28,14 +40,16 @@ def normalize_phone(value: object) -> str | None:
     try:
         parsed = phonenumbers.parse(raw, None)
     except phonenumbers.NumberParseException as exc:
+        masked = _mask_phone_for_error(raw)
         raise ValueError(
-            "basics.phone must be a valid international phone number in E.164 format "
-            "(for example, +34615822869)."
+            f"basics.phone='{masked}' is invalid. Use an international phone number "
+            "in E.164 format (for example, +34615822869)."
         ) from exc
 
     if not phonenumbers.is_possible_number(parsed) or not phonenumbers.is_valid_number(parsed):
+        masked = _mask_phone_for_error(raw)
         raise ValueError(
-            "basics.phone must be a real, valid international phone number in E.164 "
+            f"basics.phone='{masked}' is not a real and valid phone number. Use E.164 "
             "format (for example, +34615822869)."
         )
 
