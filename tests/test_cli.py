@@ -276,6 +276,20 @@ def test_convert_writes_template_overrides_next_to_output(tmp_path) -> None:
     assert (output_yaml.parent / "html" / "Full.html").exists()
 
 
+def test_convert_copies_name_only_title_template(tmp_path) -> None:
+    resume_path = Path(__file__).resolve().parents[1] / "examples" / "resume.example.json"
+    output_yaml = tmp_path / "generated" / "rendercv.yaml"
+
+    _run_convert(input_source=str(resume_path), output_path=str(output_yaml))
+
+    i18n_template = output_yaml.parent / "profileengine01classic" / "_i18n.j2"
+    content = i18n_template.read_text(encoding="utf-8")
+
+    assert "{{- name -}}" in content
+    assert "CV de" not in content
+    assert "'s CV" not in content
+
+
 def test_render_html_prepares_template_overrides_in_input_directory(monkeypatch, tmp_path) -> None:
     input_yaml = tmp_path / "rendercv.yaml"
     input_yaml.write_text("cv:\n  name: Jane Doe\n", encoding="utf-8")
@@ -292,3 +306,43 @@ def test_render_html_prepares_template_overrides_in_input_directory(monkeypatch,
     assert (input_yaml.parent / "profileengine01classic" / "SectionBeginning.j2.typ").exists()
     assert (input_yaml.parent / "markdown" / "Header.j2.md").exists()
     assert (input_yaml.parent / "html" / "Full.html").exists()
+
+
+def test_html_invalid_phone_fails_before_render_step(monkeypatch, tmp_path) -> None:
+    resume_path = tmp_path / "resume.json"
+    resume_path.write_text(
+        json.dumps(
+            {
+                "basics": {
+                    "name": "Jane Doe",
+                    "phone": "+34123456789",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    output_yaml = tmp_path / "output" / "rendercv_CV.yaml"
+    html_output = tmp_path / "output" / "index.html"
+
+    called = {"render_html": False}
+
+    def fake_render(input_yaml_path: str, html_output_path: str) -> None:
+        called["render_html"] = True
+
+    monkeypatch.setattr("profilecli.cli._run_render_html", fake_render)
+
+    result = runner.invoke(
+        app,
+        [
+            "html",
+            str(resume_path),
+            "--output",
+            str(output_yaml),
+            "--html-output",
+            str(html_output),
+        ],
+    )
+
+    assert result.exit_code == 3
+    assert "basics.phone" in result.output
+    assert called["render_html"] is False
