@@ -14,7 +14,7 @@ Este repositorio utiliza una estructura de contexto único. Consulta `docs/agent
 
 ## Idioma
 
-Utiliza español de forma predeterminada en toda la documentación del repositorio, incluidos issues, especificaciones, ADRs, comentarios de código y docstrings. Utiliza inglés para el código, los identificadores, los nombres de tipos, funciones y variables, y los elementos técnicos literales como comandos, rutas, etiquetas canónicas y nombres propios de herramientas o skills. Una instrucción explícita para usar otro idioma prevalece sobre esta regla.
+Utiliza español de forma predeterminada en toda la documentación del repositorio, incluidos issues, PRs, especificaciones, ADRs, comentarios de código y docstrings. Utiliza inglés para el código, los identificadores, los nombres de tipos, funciones y variables, y los elementos técnicos literales como comandos, rutas, etiquetas canónicas y nombres propios de herramientas o skills. Una instrucción explícita para usar otro idioma prevalece sobre esta regla.
 
 ## Commits
 
